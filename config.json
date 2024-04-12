@@ -1,0 +1,11 @@
+{
+	"clientId": "client-id",
+	"clientSecret": "client-secret",
+	"oauthDeviceUrl": "oauth_device_url",
+	"oauthTokenUrl": "oauth_token_url",
+	"oauthTokenIntrospectUrl": "oauth_token_introspect_url",
+	"_comment": {
+		"text": "There could be also scope config which is optional. Default scope value is listed below",
+		"scope": "openid profile"
+	}
+}
