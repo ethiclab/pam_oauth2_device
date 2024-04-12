@@ -97,7 +97,7 @@ impl OAuthClient {
             client_id: c.client_id.clone(),
             client_secret: c.client_secret.clone(),
             grant_type: String::from("urn:ietf:params:oauth:grant-type:device_code"),
-            scope: c.scope.clone().unwrap_or(String::from("openid profile")),
+            scope: c.get_scope().to_string(),
             redirect_uri: String::from("urn:ietf:wg:oauth:2.0:oob"),
         })
     }
