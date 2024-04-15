@@ -102,30 +102,23 @@ impl OAuthClient {
         })
     }
 
-    pub fn device_code_req(&self) -> Result<DeviceCodeResponse, Box<dyn std::error::Error>> {
-        let client = self.reqwest_client.clone();
-
-        let mut params = HashMap::new();
-        params.insert("client_id", &self.client_id);
-        params.insert("client_secret", &self.client_secret);
-        params.insert("scope", &self.scope);
-        params.insert("redirect_uri", &self.redirect_uri);
-
-        let req = client
-            .post(self.device_url.clone())
-            .headers(self.reqwest_headers.clone())
-            .form(&params);
-
+    fn execute_req<T>(
+        &self,
+        req: reqwest::blocking::RequestBuilder,
+    ) -> Result<T, Box<dyn std::error::Error>>
+    where
+        T: for<'de> Deserialize<'de>,
+    {
         let req = req.build()?;
-        let response = client.execute(req)?;
+        let response = self.reqwest_client.execute(req)?;
 
         match response.status() {
             e if e.is_client_error() => {
                 let err: OAuthError = serde_json::from_str(&response.text()?)?;
                 Err(Box::new(err))
             }
-            StatusCode::OK => {
-                let resp: DeviceCodeResponse = serde_json::from_str(&response.text()?)?;
+            reqwest::StatusCode::OK => {
+                let resp: T = serde_json::from_str(&response.text()?)?;
                 Ok(resp)
             }
             _ => {
@@ -136,31 +129,47 @@ impl OAuthClient {
         }
     }
 
-    pub fn token_req(
+    pub fn device_code_req(&self) -> Result<DeviceCodeResponse, Box<dyn std::error::Error>> {
+        let mut params = HashMap::new();
+        params.insert("client_id", &self.client_id);
+        params.insert("client_secret", &self.client_secret);
+        params.insert("scope", &self.scope);
+        params.insert("redirect_uri", &self.redirect_uri);
+
+        let req = self
+            .reqwest_client
+            .post(self.device_url.clone())
+            .headers(self.reqwest_headers.clone())
+            .form(&params);
+
+        self.execute_req(req)
+    }
+
+    pub fn get_token(
         &self,
         device_code: &String,
         interval: u64,
     ) -> Result<TokenResponse, Box<dyn std::error::Error>> {
-        let client = self.reqwest_client.clone();
         let mut params = HashMap::new();
         params.insert("client_id", &self.client_id);
         params.insert("client_secret", &self.client_secret);
         params.insert("scope", &self.scope);
         params.insert("grant_type", &self.grant_type);
         params.insert("device_code", device_code);
-        let req = client
+        let req = self
+            .reqwest_client
             .post(self.token_url.clone())
             .headers(self.reqwest_headers.clone())
             .form(&params);
 
         let req = req.build()?;
-        let response = client.execute(req)?;
+        let response = self.reqwest_client.execute(req)?;
         match response.status() {
             e if e.is_client_error() => {
                 let err: OAuthError = serde_json::from_str(&response.text()?)?;
                 if err.error_type == "authorization_pending" {
                     sleep(Duration::from_secs(interval));
-                    self.token_req(device_code, interval)
+                    self.get_token(device_code, interval)
                 } else {
                     Err(Box::new(err))
                 }
@@ -177,37 +186,20 @@ impl OAuthClient {
         }
     }
 
-    pub fn introspect_req(
+    pub fn introspect(
         &self,
         access_token: &str,
     ) -> Result<IntrospectResponse, Box<dyn std::error::Error>> {
-        let client = self.reqwest_client.clone();
         let mut params = HashMap::new();
         params.insert("token", access_token);
 
-        let req = client
+        let req = self
+            .reqwest_client
             .post(self.token_introspect_url.clone())
             .basic_auth(&self.client_id, Some(&self.client_secret))
             .form(&params);
 
-        let req = req.build()?;
-        let response = client.execute(req)?;
-
-        match response.status() {
-            e if e.is_client_error() => {
-                let err: OAuthError = serde_json::from_str(&response.text()?)?;
-                Err(Box::new(err))
-            }
-            StatusCode::OK => {
-                let resp: IntrospectResponse = serde_json::from_str(&response.text()?)?;
-                Ok(resp)
-            }
-            _ => {
-                let err: Box<dyn std::error::Error> =
-                    format!("Unknown error: {:?}", &response.text()?).into();
-                Err(err)
-            }
-        }
+        self.execute_req(req)
     }
 }
 

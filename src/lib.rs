@@ -33,7 +33,7 @@ impl PamHooks for PamOAuth2Device {
     fn sm_authenticate(pamh: &mut PamHandle, args: Vec<&CStr>, _flags: PamFlag) -> PamResultCode {
         init_logs();
         let args = parse_args(&args);
-        let default_config = "etc/pam_oauth2_device/config.json".to_string();
+        let default_config = "/etc/pam_oauth2_device/config.json".to_string();
         let config = read_config(args.get("config").unwrap_or(&default_config));
         let config = or_pam_err!(
             config,
@@ -70,40 +70,43 @@ impl PamHooks for PamOAuth2Device {
         match qr_code {
             Ok(q) => {
                 pam_try!(conv.send(PAM_TEXT_INFO, &q));
+                pam_try!(conv.send(PAM_TEXT_INFO, "Use QR code above or\n"));
             }
-            Err(_) => (),
+            Err(e) => {
+                log::warn!("Failed to create QR code: {e}");
+            }
         };
 
         let link_info = format!(
-            "Login via this link using your web browser: \n{}",
+            "login via this link using your web browser: \n{}",
             &device_code_resp.verification_uri_complete
         );
         pam_try!(conv.send(PAM_TEXT_INFO, &link_info));
         pam_try!(conv.send(
             PAM_PROMPT_ECHO_OFF,
-            "Press \"ENTER\" after successful authentication: "
+            "Press \"ENTER\" after successful authentication in your web browser: "
         ));
 
         let token = or_pam_err!(
-            oauth_client.token_req(&device_code_resp.device_code, device_code_resp.interval),
+            oauth_client.get_token(&device_code_resp.device_code, device_code_resp.interval),
             "Failed to resolve token response",
             PamResultCode::PAM_AUTH_ERR
         );
 
-        let token_info = or_pam_err!(
-            oauth_client.introspect_req(&token.access_token),
+        let token = or_pam_err!(
+            oauth_client.introspect(&token.access_token),
             "Failed to vlidate access_token",
             PamResultCode::PAM_AUTH_ERR
         );
 
-        if token_info.is_active()
-            && token_info.validate_scope(oauth_client.scope)
-            && token_info.validate_username(&user)
-            && token_info.validate_exp()
+        if token.is_active()
+            && token.validate_scope(oauth_client.scope)
+            && token.validate_username(&user)
+            && token.validate_exp()
         {
             log::info!(
                 "Authentication successful for remote user: {} -> local user: {user}",
-                token_info.username.unwrap()
+                token.username.unwrap_or_default()
             );
             return PamResultCode::PAM_SUCCESS;
         }
