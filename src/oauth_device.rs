@@ -2,15 +2,12 @@ use crate::config::Config;
 use reqwest::blocking::Client;
 use reqwest::header::HeaderMap;
 use reqwest::header::HeaderValue;
-use reqwest::StatusCode;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use serde_with::TimestampSeconds;
 use std::collections::HashMap;
 use std::fmt::Display;
-use std::thread::sleep;
-use std::time::Duration;
 use std::time::SystemTime;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -30,9 +27,10 @@ impl Display for OAuthError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "OAuth server error: {}: {}",
+            //"OAuth server error: {}: {}",
+            "{}",
             self.error_type,
-            self.error_description.as_deref().unwrap_or("")
+            //self.error_description.as_deref().unwrap_or("")
         )
     }
 }
@@ -148,7 +146,6 @@ impl OAuthClient {
     pub fn get_token(
         &self,
         device_code: &String,
-        interval: u64,
     ) -> Result<TokenResponse, Box<dyn std::error::Error>> {
         let mut params = HashMap::new();
         params.insert("client_id", &self.client_id);
@@ -162,28 +159,7 @@ impl OAuthClient {
             .headers(self.reqwest_headers.clone())
             .form(&params);
 
-        let req = req.build()?;
-        let response = self.reqwest_client.execute(req)?;
-        match response.status() {
-            e if e.is_client_error() => {
-                let err: OAuthError = serde_json::from_str(&response.text()?)?;
-                if err.error_type == "authorization_pending" {
-                    sleep(Duration::from_secs(interval));
-                    self.get_token(device_code, interval)
-                } else {
-                    Err(Box::new(err))
-                }
-            }
-            StatusCode::OK => {
-                let resp: TokenResponse = serde_json::from_str(&response.text()?)?;
-                Ok(resp)
-            }
-            _ => {
-                let err: Box<dyn std::error::Error> =
-                    format!("Unknown error: {:?}", &response.text()?).into();
-                Err(err)
-            }
-        }
+        self.execute_req(req)
     }
 
     pub fn introspect(
