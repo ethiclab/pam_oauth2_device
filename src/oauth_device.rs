@@ -193,31 +193,42 @@ impl IntrospectResponse {
         let has_scope = req_scope.iter().all(|scope| valid_scope.contains(scope));
 
         if !has_scope {
-            log::warn!("Invalid scope!: {}", scope);
+            log::warn!(
+                "Invalid scope for user {} -> requested scope: {}",
+                self.username.as_deref().unwrap_or_default(),
+                scope
+            );
         }
 
         has_scope
     }
     pub fn validate_username(&self, user: &str) -> bool {
-        if self.username.is_none() {
+        if let Some(username) = &self.username {
+            if username != user {
+                log::warn!(
+                    "Invalid username: remote user {} tried to authenticate as a local user {}!",
+                    self.username.clone().unwrap(),
+                    user
+                );
+            }
+            username == user
+        } else {
             log::error!("Cannot find username in OAuth Provider response!");
-            return false;
+            false
         }
-        if self.username.clone().is_some_and(|u| u != user) {
-            log::warn!("Invalid username!: {}", self.username.clone().unwrap());
-        }
-
-        self.username.clone().is_some_and(|u| u == user)
     }
     pub fn validate_exp(&self) -> bool {
-        if self.exp.is_none() {
+        if let Some(exp) = self.exp {
+            if exp <= SystemTime::now() {
+                log::warn!(
+                    "User token expired for user: {} !",
+                    self.username.as_deref().unwrap_or_default()
+                );
+            }
+            exp > SystemTime::now()
+        } else {
             log::error!("Cannot find exp in OAuth Provider response!");
-            return false;
+            false
         }
-        if self.exp.is_some_and(|e| e <= SystemTime::now()) {
-            log::warn!("User token expired!");
-        }
-
-        self.exp.is_some_and(|e| e > SystemTime::now())
     }
 }
