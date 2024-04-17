@@ -81,6 +81,7 @@ impl PamHooks for PamOAuth2Device {
         loop {
             token_try = match oauth_client.get_token(&device_code_resp.device_code) {
                 Err(e) if e.to_string() == "authorization_pending" => {
+                    sleep(Duration::from_secs(device_code_resp.interval)); // Wait for the OAuth provider-specified time interval
                     pam_try!(conv.send(
                         PAM_PROMPT_ECHO_OFF,
                         &format_user_prompt(
@@ -92,7 +93,6 @@ impl PamHooks for PamOAuth2Device {
                         "{e} for {user}. Next try in: {} secs...",
                         &device_code_resp.interval
                     );
-                    sleep(Duration::from_secs(device_code_resp.interval)); // Wait for the OAuth provider-specified time interval
                     continue;
                 }
                 re => re,
@@ -130,12 +130,10 @@ impl PamHooks for PamOAuth2Device {
     }
 
     fn sm_setcred(_pamh: &mut PamHandle, _args: Vec<&CStr>, _flags: PamFlag) -> PamResultCode {
-        println!("set credentials");
         PamResultCode::PAM_SUCCESS
     }
 
     fn acct_mgmt(_pamh: &mut PamHandle, _args: Vec<&CStr>, _flags: PamFlag) -> PamResultCode {
-        println!("account management");
         PamResultCode::PAM_SUCCESS
     }
 }

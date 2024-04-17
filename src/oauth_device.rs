@@ -25,13 +25,7 @@ impl std::error::Error for OAuthError {
 
 impl Display for OAuthError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            //"OAuth server error: {}: {}",
-            "{}",
-            self.error_type,
-            //self.error_description.as_deref().unwrap_or("")
-        )
+        write!(f, "{}", self.error_type,)
     }
 }
 
