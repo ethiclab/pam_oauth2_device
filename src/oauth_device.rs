@@ -1,230 +1,132 @@
 use crate::config::Config;
-use reqwest::blocking::Client;
-use reqwest::header::HeaderMap;
-use reqwest::header::HeaderValue;
-use reqwest::Url;
-use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
-use serde_with::TimestampSeconds;
-use std::collections::HashMap;
-use std::fmt::Display;
-use std::time::SystemTime;
+use oauth2::basic::{BasicClient, BasicTokenType};
+use oauth2::devicecode::StandardDeviceAuthorizationResponse;
+use oauth2::reqwest::http_client;
+use oauth2::{
+    AccessToken, AuthUrl, ClientId, ClientSecret, DeviceAuthorizationUrl, EmptyExtraTokenFields,
+    IntrospectionUrl, RedirectUrl, Scope, StandardTokenIntrospectionResponse,
+    StandardTokenResponse, TokenIntrospectionResponse, TokenUrl,
+};
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct OAuthError {
-    #[serde(rename = "error")]
-    pub error_type: String,
-    pub error_description: Option<String>,
-}
+type DynErr = Box<dyn std::error::Error>;
 
-impl std::error::Error for OAuthError {}
-
-impl Display for OAuthError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.error_type,)
-    }
-}
-
-#[derive(Debug)]
 pub struct OAuthClient {
-    pub reqwest_client: Client,
-    pub reqwest_headers: HeaderMap,
-    pub device_url: Url,
-    pub token_url: Url,
-    pub token_introspect_url: Url,
-    pub client_id: String,
-    pub client_secret: String,
-    pub grant_type: String,
-    pub scope: String,
-    pub redirect_uri: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct DeviceCodeResponse {
-    pub device_code: String,
-    user_code: String,
-    verification_uri: String,
-    pub verification_uri_complete: String,
-    expires_in: usize,
-    pub interval: u64,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct TokenResponse {
-    pub access_token: String,
-    refresh_token: Option<String>,
-    id_token: Option<String>,
-    token_type: String,
-    expires_in: usize,
-}
-
-#[serde_as]
-#[derive(Serialize, Deserialize, Debug)]
-pub struct IntrospectResponse {
-    pub active: bool,
-    pub scope: Option<String>,
-    pub client_id: Option<String>,
-    pub username: Option<String>,
-    #[serde_as(as = "Option<TimestampSeconds<i64>>")]
-    pub exp: Option<SystemTime>,
+    client: BasicClient,
+    scope: Vec<Scope>,
 }
 
 impl OAuthClient {
-    pub fn new(c: &Config) -> Result<Self, Box<dyn std::error::Error>> {
-        let mut headers = HeaderMap::new();
-        headers.insert(
-            "content-type",
-            HeaderValue::from_str("application/x-www-form-urlencoded")?,
-        );
-        Ok(Self {
-            reqwest_client: Client::new(),
-            reqwest_headers: headers,
-            device_url: Url::parse(&c.oauth_device_url)?,
-            token_url: Url::parse(&c.oauth_token_url)?,
-            token_introspect_url: Url::parse(&c.oauth_token_introspect_url)?,
-            client_id: c.client_id.clone(),
-            client_secret: c.client_secret.clone(),
-            grant_type: String::from("urn:ietf:params:oauth:grant-type:device_code"),
-            scope: c.get_scope().to_string(),
-            redirect_uri: String::from("urn:ietf:wg:oauth:2.0:oob"),
-        })
+    pub fn new(c: Config) -> Result<Self, DynErr> {
+        let client_id = ClientId::new(c.client_id.clone());
+        let client_secret = ClientSecret::new(c.client_secret.clone());
+        let auth_url = AuthUrl::new(c.oauth_auth_url.clone())?;
+        let token_url = TokenUrl::new(c.oauth_token_url.clone())?;
+        let device_url = DeviceAuthorizationUrl::new(c.oauth_device_url.clone())?;
+        let introspect_url = IntrospectionUrl::new(c.oauth_token_introspect_url.clone())?;
+        let redirect_url = RedirectUrl::new("urn:ietf:wg:oauth:2.0:oob".to_string())?;
+        let scope = c
+            .get_scope()
+            .split_whitespace()
+            .map(|s| Scope::new(s.to_string()))
+            .collect();
+
+        let client = BasicClient::new(client_id, Some(client_secret), auth_url, Some(token_url))
+            .set_device_authorization_url(device_url)
+            .set_introspection_uri(introspect_url)
+            .set_redirect_uri(redirect_url);
+
+        Ok(Self { client, scope })
     }
 
-    fn execute_req<T>(
-        &self,
-        req: reqwest::blocking::RequestBuilder,
-    ) -> Result<T, Box<dyn std::error::Error>>
-    where
-        T: for<'de> Deserialize<'de>,
-    {
-        let req = req.build()?;
-        let response = self.reqwest_client.execute(req)?;
-
-        match response.status() {
-            e if e.is_client_error() => {
-                let err: OAuthError = serde_json::from_str(&response.text()?)?;
-                Err(Box::new(err))
-            }
-            reqwest::StatusCode::OK => {
-                let resp: T = serde_json::from_str(&response.text()?)?;
-                Ok(resp)
-            }
-            _ => {
-                let err: Box<dyn std::error::Error> =
-                    format!("Unknown error: {:?}", &response.text()?).into();
-                Err(err)
-            }
-        }
-    }
-
-    pub fn device_code_req(&self) -> Result<DeviceCodeResponse, Box<dyn std::error::Error>> {
-        let mut params = HashMap::new();
-        params.insert("client_id", &self.client_id);
-        params.insert("client_secret", &self.client_secret);
-        params.insert("scope", &self.scope);
-        params.insert("redirect_uri", &self.redirect_uri);
-
-        let req = self
-            .reqwest_client
-            .post(self.device_url.clone())
-            .headers(self.reqwest_headers.clone())
-            .form(&params);
-
-        self.execute_req(req)
+    pub fn device_code(&self) -> Result<StandardDeviceAuthorizationResponse, DynErr> {
+        let details: StandardDeviceAuthorizationResponse = self
+            .client
+            .exchange_device_code()?
+            .add_scopes(self.scope.clone())
+            .request(http_client)?;
+        Ok(details)
     }
 
     pub fn get_token(
         &self,
-        device_code: &String,
-    ) -> Result<TokenResponse, Box<dyn std::error::Error>> {
-        let mut params = HashMap::new();
-        params.insert("client_id", &self.client_id);
-        params.insert("client_secret", &self.client_secret);
-        params.insert("scope", &self.scope);
-        params.insert("grant_type", &self.grant_type);
-        params.insert("device_code", device_code);
-        let req = self
-            .reqwest_client
-            .post(self.token_url.clone())
-            .headers(self.reqwest_headers.clone())
-            .form(&params);
-
-        self.execute_req(req)
+        details: &StandardDeviceAuthorizationResponse,
+    ) -> Result<StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>, DynErr> {
+        let token = self.client.exchange_device_access_token(details).request(
+            http_client,
+            std::thread::sleep,
+            None,
+        )?;
+        Ok(token)
     }
 
     pub fn introspect(
         &self,
-        access_token: &str,
-    ) -> Result<IntrospectResponse, Box<dyn std::error::Error>> {
-        let mut params = HashMap::new();
-        params.insert("token", access_token);
-
-        let req = self
-            .reqwest_client
-            .post(self.token_introspect_url.clone())
-            .basic_auth(&self.client_id, Some(&self.client_secret))
-            .form(&params);
-
-        self.execute_req(req)
+        token: &AccessToken,
+    ) -> Result<StandardTokenIntrospectionResponse<EmptyExtraTokenFields, BasicTokenType>, DynErr>
+    {
+        let introspect = self.client.introspect(token)?.request(http_client)?;
+        Ok(introspect)
     }
 }
 
-impl IntrospectResponse {
-    pub fn is_active(&self) -> bool {
-        if !self.active {
-            log::warn!("User is inactive!");
-        }
-        self.active
+pub fn validate_token(
+    token: &StandardTokenIntrospectionResponse<EmptyExtraTokenFields, BasicTokenType>,
+    oauth_client: OAuthClient,
+    user: &String,
+) -> bool {
+    if !token.active() {
+        log::warn!("User token inactive!");
+        return false;
     }
-    pub fn validate_scope(&self, scope: String) -> bool {
-        let valid_scope: Vec<&str> = match &self.scope {
-            Some(s) => s.split_whitespace().collect(),
-            None => {
-                log::error!("Cannot find scope in OAuth Provider response");
-                return false;
-            }
-        };
-        let req_scope: Vec<&str> = scope.split_whitespace().collect();
 
-        let has_scope = req_scope.iter().all(|scope| valid_scope.contains(scope));
-
-        if !has_scope {
-            log::warn!(
-                "Invalid scope for user {} -> requested scope: {}",
-                self.username.as_deref().unwrap_or_default(),
-                scope
-            );
-        }
-
-        has_scope
-    }
-    pub fn validate_username(&self, user: &str) -> bool {
-        if let Some(username) = &self.username {
+    let username_valid = token.username().map_or_else(
+        || {
+            log::warn!("No username provided");
+            false
+        },
+        |username| {
             if username != user {
-                log::warn!(
-                    "Invalid username: remote user {} tried to authenticate as a local user {}!",
-                    self.username.clone().unwrap(),
-                    user
-                );
+                log::warn!("Invalid username: remote: {} -> local: {}", username, &user);
+                false
+            } else {
+                true
             }
-            username == user
-        } else {
-            log::error!("Cannot find username in OAuth Provider response!");
+        },
+    );
+
+    let scope_valid = token.scopes().map_or_else(
+        || {
+            log::warn!("No scope provided");
             false
-        }
-    }
-    pub fn validate_exp(&self) -> bool {
-        if let Some(exp) = self.exp {
-            if exp <= SystemTime::now() {
+        },
+        |scopes| {
+            if !scopes
+                .windows(oauth_client.scope.len())
+                .any(|window| window == oauth_client.scope)
+            {
                 log::warn!(
-                    "User token expired for user: {} !",
-                    self.username.as_deref().unwrap_or_default()
+                    "Invalid scopes for user {}: {:?}",
+                    &user,
+                    oauth_client.scope,
                 );
+                false
+            } else {
+                true
             }
-            exp > SystemTime::now()
-        } else {
-            log::error!("Cannot find exp in OAuth Provider response!");
+        },
+    );
+
+    let exp_valid = token.exp().map_or_else(
+        || {
+            log::warn!("No expiration time provided");
             false
-        }
+        },
+        |exp| exp > chrono::Local::now(),
+    );
+
+    if !exp_valid {
+        log::warn!("Token has expired for user {}", &user);
     }
+
+    username_valid && scope_valid && exp_valid
 }

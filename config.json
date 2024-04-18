@@ -1,6 +1,7 @@
 {
 	"clientId": "client-id",
 	"clientSecret": "client-secret",
+	"oauthAuthUrl": "oauth_auth_url",
 	"oauthDeviceUrl": "oauth_device_url",
 	"oauthTokenUrl": "oauth_token_url",
 	"oauthTokenIntrospectUrl": "oauth_token_introspect_url",

@@ -11,6 +11,7 @@ crate-type = ["cdylib"]
 [dependencies]
 chrono = "0.4.37"
 log = "0.4.21"
+oauth2 = "4.4.2"
 pam-bindings = "0.1.1"
 qrcode = "0.14.0"
 reqwest = { version = "0.12.3", features = ["blocking"]}

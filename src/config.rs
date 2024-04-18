@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::fs::File;
 use std::io::{Error as IOError, Read};
 use std::result::Result;
@@ -9,6 +8,7 @@ use std::result::Result;
 pub struct Config {
     pub client_id: String,
     pub client_secret: String,
+    pub oauth_auth_url: String,
     pub oauth_device_url: String,
     pub oauth_token_url: String,
     pub oauth_token_introspect_url: String,
@@ -21,21 +21,6 @@ impl Config {
             Some(s) => s,
             None => "openid profile",
         }
-    }
-}
-
-impl Display for Config {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        write!(
-            f,
-            "{{\nClientId: {}\nClient Secret: {}\nOAuth Device URL: {}\nOAuth Token URL: {}\nOAuth Auth URL: {}\nScope: {}}}",
-            self.client_id,
-            self.client_secret,
-            self.oauth_token_introspect_url,
-            self.oauth_token_url,
-            self.oauth_token_introspect_url,
-            self.get_scope()
-        )
     }
 }
 

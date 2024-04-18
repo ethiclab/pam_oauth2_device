@@ -3,6 +3,7 @@ mod oauth_device;
 
 use crate::config::read_config;
 use crate::oauth_device::*;
+use oauth2::{StandardDeviceAuthorizationResponse, TokenIntrospectionResponse, TokenResponse};
 use pam::constants::{PamFlag, PamResultCode, PAM_PROMPT_ECHO_OFF};
 
 use pam::conv::Conv;
@@ -13,8 +14,6 @@ use qrcode::QrCode;
 use simplelog::*;
 use std::collections::HashMap;
 use std::ffi::CStr;
-use std::thread::sleep;
-use std::time::Duration;
 
 struct PamOAuth2Device;
 pam::pam_hooks!(PamOAuth2Device);
@@ -58,13 +57,13 @@ impl PamHooks for PamOAuth2Device {
         log::info!("Trying to authenticate user: {user}");
 
         let oauth_client = or_pam_err!(
-            OAuthClient::new(&config),
+            OAuthClient::new(config),
             "Failed to create OAuthClient",
             PamResultCode::PAM_SYSTEM_ERR
         );
 
         let device_code_resp = or_pam_err!(
-            oauth_client.device_code_req(),
+            oauth_client.device_code(),
             "Failed to comunicate with device endpoint",
             PamResultCode::PAM_AUTH_ERR
         );
@@ -72,54 +71,29 @@ impl PamHooks for PamOAuth2Device {
         pam_try!(conv.send(
             PAM_PROMPT_ECHO_OFF,
             &format_user_prompt(
-                &device_code_resp.verification_uri_complete,
+                &device_code_resp,
                 "Press \"ENTER\" after successful authentication: "
             )
         ));
 
-        let token_try;
-        loop {
-            token_try = match oauth_client.get_token(&device_code_resp.device_code) {
-                Err(e) if e.to_string() == "authorization_pending" => {
-                    sleep(Duration::from_secs(device_code_resp.interval)); // Wait for the OAuth provider-specified time interval
-                    pam_try!(conv.send(
-                        PAM_PROMPT_ECHO_OFF,
-                        &format_user_prompt(
-                            &device_code_resp.verification_uri_complete,
-                            "Try again and press \"ENTER\": "
-                        )
-                    ));
-                    log::warn!(
-                        "{e} for {user}. Next try in: {} secs...",
-                        &device_code_resp.interval
-                    );
-                    continue;
-                }
-                re => re,
-            };
-            break;
-        }
-
         let token = or_pam_err!(
-            token_try,
-            "Failed to resolve token response",
+            oauth_client.get_token(&device_code_resp),
+            "Failed to get user token",
             PamResultCode::PAM_AUTH_ERR
         );
 
         let token = or_pam_err!(
-            oauth_client.introspect(&token.access_token),
-            "Failed to validate access_token",
+            oauth_client.introspect(&token.access_token()),
+            "Failed to introspect user token",
             PamResultCode::PAM_AUTH_ERR
         );
 
-        if token.is_active()
-            && token.validate_scope(oauth_client.scope)
-            && token.validate_username(&user)
-            && token.validate_exp()
-        {
+        if validate_token(&token, oauth_client, &user) {
+            let username = token.username().unwrap(); //it is safe cause of token.validate_username
             log::info!(
-                "Authentication successful for remote user: {} -> local user: {user}",
-                token.username.unwrap() //it is safe cause of token.validate_username
+                "Authentication successful for remote user: {} -> local user: {}",
+                username,
+                user
             );
             return PamResultCode::PAM_SUCCESS;
         }
@@ -181,20 +155,38 @@ fn qr_code(url: &String) -> Result<String, Box<dyn std::error::Error>> {
     Ok(format!("{}", qr_text))
 }
 
-fn format_user_prompt(verification_uri_complete: &String, msg: &str) -> String {
-    let qrcode = match qr_code(verification_uri_complete) {
-        Err(e) => {
-            log::warn!("Failed to create QR code: {e}");
-            String::default()
-        }
-        Ok(qr) => qr,
-    };
-
-    format!(
-        "\n{}\n{}\n{}\n{}",
-        qrcode,
-        "Scan QR code above or login via provided link in your web browser:",
-        verification_uri_complete,
-        msg
-    )
+fn format_user_prompt(device_code_resp: &StandardDeviceAuthorizationResponse, msg: &str) -> String {
+    if let Some(verification_uri_complete) = device_code_resp.verification_uri_complete() {
+        let qrcode = match qr_code(&verification_uri_complete.secret()) {
+            Err(e) => {
+                log::warn!("Failed to create QR code: {e}");
+                String::default()
+            }
+            Ok(qr) => qr,
+        };
+        return format!(
+            "\n{}\n{}\n{}\n{}",
+            qrcode,
+            "Scan QR code above or login via provided link in your web browser:",
+            verification_uri_complete.secret(),
+            msg
+        );
+    } else {
+        let qrcode = match qr_code(&device_code_resp.verification_uri().to_string()) {
+            Err(e) => {
+                log::warn!("Failed to create QR code: {e}");
+                String::default()
+            }
+            Ok(qr) => qr,
+        };
+        return format!(
+            "\n{}\n{}\n{}\n{}\n{}\n{}",
+            qrcode,
+            "Scan QR code above or open provided link in your web browser:",
+            device_code_resp.verification_uri().to_string(),
+            "And enter this uniqe code:",
+            device_code_resp.user_code().secret(),
+            msg
+        );
+    }
 }
