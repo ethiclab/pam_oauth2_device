@@ -17,11 +17,7 @@ pub struct OAuthError {
     pub error_description: Option<String>,
 }
 
-impl std::error::Error for OAuthError {
-    fn description(&self) -> &str {
-        &self.error_type
-    }
-}
+impl std::error::Error for OAuthError {}
 
 impl Display for OAuthError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
