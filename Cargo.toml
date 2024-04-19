@@ -10,6 +10,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 chrono = "0.4.37"
+file-rotate = "0.7.5"
 log = "0.4.21"
 oauth2 = "4.4.2"
 pam-bindings = "0.1.1"

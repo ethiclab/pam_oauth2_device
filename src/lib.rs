@@ -4,6 +4,11 @@ mod prompt;
 
 use crate::config::read_config;
 use crate::oauth_device::*;
+use file_rotate::{
+    compression::Compression,
+    suffix::{AppendTimestamp, DateFrom, FileLimit},
+    ContentLimit, FileRotate, TimeFrequency,
+};
 use oauth2::{TokenIntrospectionResponse, TokenResponse};
 use pam::constants::{PamFlag, PamResultCode, PAM_PROMPT_ECHO_OFF};
 
@@ -133,11 +138,14 @@ fn parse_args(args: &[&CStr]) -> HashMap<String, String> {
 }
 
 fn init_logs(log_path: &str) {
-    let log_file = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(log_path)
-        .expect("Failed to open log file!");
+    let log_file = FileRotate::new(
+        log_path,
+        AppendTimestamp::with_format("%Y-%m-%d", FileLimit::MaxFiles(7), DateFrom::DateYesterday),
+        ContentLimit::Time(TimeFrequency::Daily),
+        Compression::None,
+        #[cfg(unix)]
+        None,
+    );
     CombinedLogger::init(vec![
         TermLogger::new(
             LevelFilter::Warn,
