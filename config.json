@@ -6,7 +6,8 @@
 	"oauthTokenUrl": "oauth_token_url",
 	"oauthTokenIntrospectUrl": "oauth_token_introspect_url",
 	"_comment": {
-		"text": "There could be also scope config which is optional. Default scope value is listed below",
-		"scope": "openid profile"
+		"text": "There are some optional config options. Default values are listed below",
+		"scope": "openid profile",
+		"qrEnabled": true
 	}
 }
