@@ -38,12 +38,12 @@ impl OAuthClient {
     }
 
     pub fn device_code(&self) -> Result<StandardDeviceAuthorizationResponse, DynErr> {
-        let details: StandardDeviceAuthorizationResponse = self
+        let details = self
             .client
             .exchange_device_code()?
             .add_scopes(self.scope.clone())
-            .request(http_client)?;
-        Ok(details)
+            .request(http_client);
+        details.map_err(|err| handle_error(err.into(), "Failed to recive device code response"))
     }
 
     pub fn get_token(
@@ -54,16 +54,16 @@ impl OAuthClient {
             http_client,
             std::thread::sleep,
             None,
-        )?;
-        Ok(token)
+        );
+        token.map_err(|err| handle_error(err.into(), "Failed to recivce user token"))
     }
 
     pub fn introspect(
         &self,
         token: &AccessToken,
     ) -> Result<impl TokenIntrospectionResponse<BasicTokenType>, DynErr> {
-        let introspect = self.client.introspect(token)?.request(http_client)?;
-        Ok(introspect)
+        let introspect = self.client.introspect(token)?.request(http_client);
+        introspect.map_err(|err| handle_error(err.into(), "Failed to introspect user token"))
     }
 
     pub fn validate_token(
@@ -121,4 +121,14 @@ impl OAuthClient {
 
         username_valid && scope_valid && exp_valid
     }
+}
+
+pub fn handle_error(fail: DynErr, msg: &'static str) -> DynErr {
+    let mut err_msg = msg.to_string();
+    let mut cur_fail: Option<&dyn std::error::Error> = Some(&*fail);
+    while let Some(cause) = cur_fail {
+        err_msg += &format!("\n    caused by: {}", cause);
+        cur_fail = cause.source();
+    }
+    Box::from(err_msg)
 }
