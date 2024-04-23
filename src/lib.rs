@@ -24,11 +24,12 @@ struct PamOAuth2Device;
 pam::pam_hooks!(PamOAuth2Device);
 
 macro_rules! or_pam_err {
-    ($res:expr,  $pam_error:expr) => {
+    ($res:expr, $error_message:expr, $pam_error:expr) => {
         match $res {
             Ok(o) => o,
             Err(e) => {
-                log::error!("{}", e);
+                //log::error!("{}", e);
+                handle_error(e, $error_message);
                 return $pam_error;
             }
         }
@@ -45,7 +46,11 @@ impl PamHooks for PamOAuth2Device {
 
         let default_config = "/etc/pam_oauth2_device/config.json".to_string();
         let config = read_config(args.get("config").unwrap_or(&default_config));
-        let config = or_pam_err!(config, PamResultCode::PAM_SYSTEM_ERR);
+        let config = or_pam_err!(
+            config.map_err(|err| err.into()),
+            "Failed to parse config file",
+            PamResultCode::PAM_SYSTEM_ERR
+        );
 
         let conv = match pamh.get_item::<Conv>() {
             Ok(Some(conv)) => conv,
@@ -61,9 +66,17 @@ impl PamHooks for PamOAuth2Device {
         let user = pam_try!(pamh.get_user(None));
         log::info!("Trying to authenticate user: {user}");
 
-        let oauth_client = or_pam_err!(OAuthClient::new(&config), PamResultCode::PAM_SYSTEM_ERR);
+        let oauth_client = or_pam_err!(
+            OAuthClient::new(&config),
+            "Failed to build OAuth client",
+            PamResultCode::PAM_SYSTEM_ERR
+        );
 
-        let device_code_resp = or_pam_err!(oauth_client.device_code(), PamResultCode::PAM_AUTH_ERR);
+        let device_code_resp = or_pam_err!(
+            oauth_client.device_code(),
+            "Failed to recive device code response",
+            PamResultCode::PAM_AUTH_ERR
+        );
 
         let mut user_prompt = UserPrompt::new(
             &device_code_resp,
@@ -78,11 +91,13 @@ impl PamHooks for PamOAuth2Device {
 
         let token = or_pam_err!(
             oauth_client.get_token(&device_code_resp),
+            "Failed to recive user token",
             PamResultCode::PAM_AUTH_ERR
         );
 
         let token = or_pam_err!(
             oauth_client.introspect(&token.access_token()),
+            "Failed to introspect user token",
             PamResultCode::PAM_AUTH_ERR
         );
 
