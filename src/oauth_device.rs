@@ -122,13 +122,3 @@ impl OAuthClient {
         username_valid && scope_valid && exp_valid
     }
 }
-
-pub fn handle_error(fail: DynErr, msg: &'static str) {
-    let mut err_msg = msg.to_string();
-    let mut cur_fail: Option<&dyn std::error::Error> = Some(&*fail);
-    while let Some(cause) = cur_fail {
-        err_msg += &format!("\n    caused by: {}", cause);
-        cur_fail = cause.source();
-    }
-    log::error!("{}", err_msg);
-}

@@ -51,32 +51,27 @@ pub(crate) fn http_mock_device_complete(server: &mut mockito::ServerGuard) {
 }
 
 #[allow(dead_code)]
-pub(crate) fn http_mock_token_200(server: &mut mockito::ServerGuard) {
-    server
-        .mock("POST", "/token")
-        .with_status(200)
-        .with_body(
+pub(crate) fn http_mock_token_with_status(server: &mut mockito::ServerGuard, status: usize) {
+    let body = match status {
+        200..=299 => {
             r#"{
         "access_token": "mocking_access_token",
         "refresh_token": "mocking_refresh_token",
         "id_token": "mocking_id_token",
         "token_type": "Bearer",
         "expires_in": 86400
-    }"#,
-        )
-        .create();
-}
-
-#[allow(dead_code)]
-pub(crate) fn http_mock_token_403(server: &mut mockito::ServerGuard) {
-    server
-        .mock("POST", "/token")
-        .with_status(500)
-        .with_body(
+            }"#
+        }
+        _ => {
             r#"{
         "error": "access_denied",
         "error_description": "Authorization for user is still pending."
-    }"#,
-        )
+            }"#
+        }
+    };
+    server
+        .mock("POST", "/token")
+        .with_status(status)
+        .with_body(body)
         .create();
 }

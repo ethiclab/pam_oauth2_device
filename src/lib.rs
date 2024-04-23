@@ -1,4 +1,5 @@
 pub mod config;
+pub mod error_logger;
 pub mod oauth_device;
 pub mod prompt;
 
@@ -13,6 +14,7 @@ use oauth2::{TokenIntrospectionResponse, TokenResponse};
 use pam::constants::{PamFlag, PamResultCode, PAM_PROMPT_ECHO_OFF};
 
 use crate::prompt::UserPrompt;
+use error_logger::{DefaultLogger, Logger};
 use pam::conv::Conv;
 use pam::module::{PamHandle, PamHooks};
 use pam::pam_try;
@@ -28,8 +30,8 @@ macro_rules! or_pam_err {
         match $res {
             Ok(o) => o,
             Err(e) => {
-                //log::error!("{}", e);
-                handle_error(e, $error_message);
+                let mut logger = DefaultLogger;
+                logger.handle_error(e, $error_message);
                 return $pam_error;
             }
         }
