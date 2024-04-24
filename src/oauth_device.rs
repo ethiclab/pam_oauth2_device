@@ -69,7 +69,7 @@ impl OAuthClient {
     pub fn validate_token(
         &self,
         token: &impl TokenIntrospectionResponse<BasicTokenType>,
-        user: &String,
+        user: &str,
     ) -> bool {
         if !token.active() {
             log::warn!("User token inactive!");

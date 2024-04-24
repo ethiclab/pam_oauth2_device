@@ -6,14 +6,14 @@ use mockito::Server;
 use oauth2::{basic::BasicTokenType, TokenResponse};
 use pam_oauth2_device::error_logger::Logger;
 use pam_oauth2_device::oauth_device::OAuthClient;
-use utils::{http_mock_device_complete, http_mock_token_with_status, parse_config};
+use utils::{http_mock_device_complete, http_mock_token_with_status, mock_config};
 
 #[test]
 fn token_basic() {
     let mut server = Server::new();
     let url = server.url();
 
-    let config = parse_config(&url, None, true);
+    let config = mock_config(&url, None, true);
     let oauth_client = OAuthClient::new(&config).unwrap();
 
     http_mock_device_complete(&mut server);
@@ -37,7 +37,7 @@ fn token_basic_err() {
     let mut server = Server::new();
     let url = server.url();
 
-    let config = parse_config(&url, None, true);
+    let config = mock_config(&url, None, true);
     let oauth_client = OAuthClient::new(&config).unwrap();
 
     http_mock_device_complete(&mut server);
@@ -61,7 +61,7 @@ fn token_other_err() {
     let mut server = Server::new();
     let url = server.url();
 
-    let config = parse_config(&url, None, true);
+    let config = mock_config(&url, None, true);
     let oauth_client = OAuthClient::new(&config).unwrap();
 
     http_mock_device_complete(&mut server);

@@ -1,6 +1,9 @@
+mod error_logger;
 mod utils;
-use crate::utils::{http_mock_device_basic, http_mock_device_complete, parse_config};
+use crate::utils::{http_mock_device_basic, http_mock_device_complete, mock_config};
+use error_logger::TestLogger;
 use mockito::Server;
+use pam_oauth2_device::error_logger::Logger;
 use pam_oauth2_device::oauth_device::OAuthClient;
 use pam_oauth2_device::prompt::{qr_code, UserPrompt};
 
@@ -9,7 +12,7 @@ fn device_basic_uri() {
     let mut server = Server::new();
     let url = server.url();
 
-    let config = parse_config(&url, None, true);
+    let config = mock_config(&url, None, true);
     let oauth_client = OAuthClient::new(&config).unwrap();
 
     http_mock_device_basic(&mut server);
@@ -45,7 +48,7 @@ fn device_uri_complete() {
     let mut server = Server::new();
     let url = server.url();
 
-    let config = parse_config(&url, None, true);
+    let config = mock_config(&url, None, true);
     let oauth_client = OAuthClient::new(&config).unwrap();
 
     http_mock_device_complete(&mut server);
@@ -85,8 +88,9 @@ fn device_uri_complete() {
 fn err_500_device() {
     let mut server = Server::new();
     let url = server.url();
+    let mut logger = TestLogger::new();
 
-    let config = parse_config(&url, None, true);
+    let config = mock_config(&url, None, true);
     let oauth_client = OAuthClient::new(&config).unwrap();
 
     server
@@ -101,10 +105,10 @@ fn err_500_device() {
         .create();
 
     let resp = oauth_client.device_code();
-
     assert!(resp.is_err());
+    let _ = resp.map_err(|err| logger.handle_error(err, "Failed to get device code"));
     assert_eq!(
-        resp.err().unwrap().to_string(),
-        "Server returned error response"
+        logger.msg,
+        "Failed to get device code\n    caused by: Server returned error response"
     );
 }

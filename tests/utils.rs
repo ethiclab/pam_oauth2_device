@@ -2,7 +2,7 @@ use pam_oauth2_device::config::Config;
 use url::Url;
 
 #[allow(dead_code)]
-pub(crate) fn parse_config(url: &String, scope: Option<String>, qr: bool) -> Config {
+pub(crate) fn mock_config(url: &String, scope: Option<String>, qr: bool) -> Config {
     Config {
         client_id: "test".to_string(),
         client_secret: "test".to_string(),
@@ -71,6 +71,44 @@ pub(crate) fn http_mock_token_with_status(server: &mut mockito::ServerGuard, sta
     };
     server
         .mock("POST", "/token")
+        .with_status(status)
+        .with_body(body)
+        .create();
+}
+
+#[allow(dead_code)]
+pub(crate) fn http_mock_introspect_with_status(
+    server: &mut mockito::ServerGuard,
+    status: usize,
+    active: bool,
+) {
+    let body = match status {
+        200..=299 => format!(
+            r#"{{
+        "active": {},
+        "scope": "openid profile",
+        "client_id": "test",
+        "username": "test",
+        "token_type": "Bearer",
+        "exp": 32481939912,
+        "iat": 1713949569,
+        "nbf": 1713949569,
+        "aud": "test",
+        "iss": "test"
+            }}"#,
+            active
+        ),
+        _ => {
+            format!(
+                r#"{{
+        "error": "invalid_client",
+        "error_description": "This client authentication was invalid"
+            }}"#
+            )
+        }
+    };
+    server
+        .mock("POST", "/introspect")
         .with_status(status)
         .with_body(body)
         .create();
