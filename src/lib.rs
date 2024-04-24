@@ -43,8 +43,10 @@ impl PamHooks for PamOAuth2Device {
         let args = parse_args(&args);
 
         let default_log_path = "/tmp/pam_oauth2_device.log".to_string();
+        let default_log_level = "info".to_string();
         let log_path = args.get("logs").unwrap_or(&default_log_path);
-        init_logs(&log_path);
+        let log_level = args.get("log_level").unwrap_or(&default_log_level);
+        init_logs(&log_path, &log_level);
 
         let default_config = "/etc/pam_oauth2_device/config.json".to_string();
         let config = read_config(args.get("config").unwrap_or(&default_config));
@@ -140,7 +142,15 @@ fn parse_args(args: &[&CStr]) -> HashMap<String, String> {
         .collect()
 }
 
-fn init_logs(log_path: &str) {
+fn init_logs(log_path: &str, log_level: &str) {
+    let log_level = match log_level {
+        "info" => LevelFilter::Info,
+        "warn" => LevelFilter::Warn,
+        "error" => LevelFilter::Error,
+        "debug" => LevelFilter::Debug,
+        "trace" => LevelFilter::Trace,
+        _ => LevelFilter::Info,
+    };
     let log_file = FileRotate::new(
         log_path,
         AppendTimestamp::with_format("%Y-%m-%d", FileLimit::MaxFiles(7), DateFrom::DateYesterday),
@@ -151,12 +161,12 @@ fn init_logs(log_path: &str) {
     );
     CombinedLogger::init(vec![
         TermLogger::new(
-            LevelFilter::Warn,
+            log_level,
             Config::default(),
             TerminalMode::Mixed,
             ColorChoice::Auto,
         ),
-        WriteLogger::new(LevelFilter::Info, Config::default(), log_file),
+        WriteLogger::new(log_level, Config::default(), log_file),
     ])
     .expect("Failed to inicialize logging!");
 }
