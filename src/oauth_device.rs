@@ -9,6 +9,7 @@ use oauth2::{
 
 type DynErr = Box<dyn std::error::Error>;
 
+#[derive(Debug)]
 pub struct OAuthClient {
     client: BasicClient,
     scope: Vec<Scope>,
