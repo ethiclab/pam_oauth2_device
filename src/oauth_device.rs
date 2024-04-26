@@ -83,7 +83,8 @@ impl OAuthClient {
                 false
             },
             |username| {
-                if username != user {
+                // Remote user cannot be root
+                if username != user || username == "root" {
                     log::warn!("Invalid username: remote: {} -> local: {}", username, &user);
                     false
                 } else {
