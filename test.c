@@ -14,7 +14,8 @@ int main(int argc, char *argv[]) {
 	const char* config_file = "device-flow-auth";
 
 	if(argc != 3) {
-		printf("Usage: app [username] [pam_config_file]\n");
+		printf("Usage: app [username] [pam_config_name]\n");
+		printf("Example: pam_test john.doe sshd\n");
 		exit(1);
 	}
 

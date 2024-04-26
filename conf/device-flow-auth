@@ -1,1 +1,2 @@
 auth       sufficient   pam_oauth2_device.so conf=/etc/pam_oauth2_device/config.json logs=/var/log/pam_oauth2_device/log log_level=info
+account    required   pam_oauth2_device.so
