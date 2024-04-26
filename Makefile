@@ -36,7 +36,7 @@ build:
 	cargo build $(RELEASE)
 
 install:
-	cp target/$(TARGET)/$(PROG) $(PAM_MOD_PATH)/$(out)
+	cp target/$(TARGET)/$(PROG) $(PAM_MOD_PATH)/$(OUTPUT)
 	cp conf/$(CONF_NAME) /etc/pam.d/
 	mkdir -p /etc/pam_oauth2_device
 	cp config.json /etc/pam_oauth2_device/example-config.json
