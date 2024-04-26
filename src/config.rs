@@ -5,7 +5,6 @@ use std::result::Result;
 use url::Url;
 
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Config {
     pub client_id: String,
     pub client_secret: String,
@@ -13,19 +12,12 @@ pub struct Config {
     pub oauth_device_url: Url,
     pub oauth_token_url: Url,
     pub oauth_token_introspect_url: Url,
-    pub scope: Option<String>,
 
-    #[serde(default = "default_qr_enabled")]
+    #[serde(default = "default_scopes")]
+    pub scopes: String,
+
+    #[serde(default = "default_true")]
     pub qr_enabled: bool,
-}
-
-impl Config {
-    pub fn get_scope(&self) -> &str {
-        match &self.scope {
-            Some(s) => s,
-            None => "openid profile",
-        }
-    }
 }
 
 pub fn read_config(path: &str) -> Result<Config, IOError> {
@@ -37,6 +29,10 @@ pub fn read_config(path: &str) -> Result<Config, IOError> {
     Ok(config)
 }
 
-fn default_qr_enabled() -> bool {
+fn default_scopes() -> String {
+    "openid profile".to_string()
+}
+
+fn default_true() -> bool {
     true
 }

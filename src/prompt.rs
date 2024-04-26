@@ -19,7 +19,7 @@ impl QrString {
 // log::debug would not compromise user verification_uri_complete
 impl Debug for QrString {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "QrCode([redacted])")
+        write!(f, "QrString([redacted])")
     }
 }
 
@@ -37,7 +37,6 @@ impl UserPrompt {
         Self {
             qrcode: None,
             verification_uri_complete: device_code_resp.verification_uri_complete().cloned(),
-            //.map_or(None, |v| Some(v.secret().to_string())),
             verification_uri: device_code_resp.verification_uri().to_string(),
             user_code: device_code_resp.user_code().to_owned(),
             msg: msg.to_string(),
@@ -117,5 +116,5 @@ pub fn qr_code(url: &String) -> Result<String, Box<dyn std::error::Error>> {
         .light_color(unicode::Dense1x2::Dark)
         .build();
 
-    Ok(format!("{}", qr_text))
+    Ok(qr_text)
 }

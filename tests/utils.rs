@@ -2,7 +2,7 @@ use pam_oauth2_device::config::Config;
 use url::Url;
 
 #[allow(dead_code)]
-pub(crate) fn mock_config(url: &String, scope: Option<String>, qr: bool) -> Config {
+pub(crate) fn mock_config(url: &String, scopes: String, qr: bool) -> Config {
     Config {
         client_id: "test".to_string(),
         client_secret: "test".to_string(),
@@ -10,7 +10,7 @@ pub(crate) fn mock_config(url: &String, scope: Option<String>, qr: bool) -> Conf
         oauth_device_url: Url::parse(&format!("{}/{}", url, "device")).unwrap(),
         oauth_token_url: Url::parse(&format!("{}/{}", url, "token")).unwrap(),
         oauth_token_introspect_url: Url::parse(&format!("{}/{}", url, "introspect")).unwrap(),
-        scope,
+        scopes,
         qr_enabled: qr,
     }
 }

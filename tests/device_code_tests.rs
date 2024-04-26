@@ -12,7 +12,7 @@ fn device_basic_uri() {
     let mut server = Server::new();
     let url = server.url();
 
-    let config = mock_config(&url, None, true);
+    let config = mock_config(&url, "openid profile".to_string(), true);
     let oauth_client = OAuthClient::new(&config).unwrap();
 
     http_mock_device_basic(&mut server);
@@ -48,7 +48,7 @@ fn device_uri_complete() {
     let mut server = Server::new();
     let url = server.url();
 
-    let config = mock_config(&url, None, true);
+    let config = mock_config(&url, "openid profile".to_string(), true);
     let oauth_client = OAuthClient::new(&config).unwrap();
 
     http_mock_device_complete(&mut server);
@@ -90,7 +90,7 @@ fn err_500_device() {
     let url = server.url();
     let mut logger = TestLogger::new();
 
-    let config = mock_config(&url, None, true);
+    let config = mock_config(&url, "openid profile".to_string(), true);
     let oauth_client = OAuthClient::new(&config).unwrap();
 
     server

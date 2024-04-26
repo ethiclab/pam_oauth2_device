@@ -12,7 +12,7 @@ type DynErr = Box<dyn std::error::Error>;
 #[derive(Debug)]
 pub struct OAuthClient {
     client: BasicClient,
-    scope: Vec<Scope>,
+    scopes: Vec<Scope>,
 }
 
 impl OAuthClient {
@@ -24,8 +24,8 @@ impl OAuthClient {
         let device_url = DeviceAuthorizationUrl::from_url(c.oauth_device_url.clone());
         let introspect_url = IntrospectionUrl::from_url(c.oauth_token_introspect_url.clone());
         let redirect_url = RedirectUrl::new("urn:ietf:wg:oauth:2.0:oob".to_string())?;
-        let scope = c
-            .get_scope()
+        let scopes = c
+            .scopes
             .split_whitespace()
             .map(|s| Scope::new(s.to_string()))
             .collect();
@@ -35,14 +35,14 @@ impl OAuthClient {
             .set_introspection_uri(introspect_url)
             .set_redirect_uri(redirect_url);
 
-        Ok(Self { client, scope })
+        Ok(Self { client, scopes })
     }
 
     pub fn device_code(&self) -> Result<StandardDeviceAuthorizationResponse, DynErr> {
         let details: StandardDeviceAuthorizationResponse = self
             .client
             .exchange_device_code()?
-            .add_scopes(self.scope.clone())
+            .add_scopes(self.scopes.clone())
             .request(http_client)?;
         Ok(details)
     }
@@ -99,8 +99,8 @@ impl OAuthClient {
             },
             |scopes| {
                 // Scopes order doesn't matter according to RFC 6749
-                if !self.scope.iter().all(|s| scopes.contains(s)) {
-                    log::warn!("Invalid scopes for user {}: {:?}", &user, self.scope,);
+                if !self.scopes.iter().all(|s| scopes.contains(s)) {
+                    log::warn!("Invalid scopes for user {}: {:?}", &user, self.scopes,);
                     false
                 } else {
                     true

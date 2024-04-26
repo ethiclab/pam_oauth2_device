@@ -155,6 +155,7 @@ fn init_logs(log_path: &str, log_level: &str) {
         "error" => LevelFilter::Error,
         "debug" => LevelFilter::Debug,
         "trace" => LevelFilter::Trace,
+        "none" => LevelFilter::Off,
         _ => LevelFilter::Info,
     };
     let log_file = FileRotate::new(

@@ -15,7 +15,7 @@ fn introspect_basic_active() {
     let mut server = Server::new();
     let url = server.url();
 
-    let config = mock_config(&url, None, true);
+    let config = mock_config(&url, "openid profile".to_string(), true);
     let oauth_client = OAuthClient::new(&config).unwrap();
 
     http_mock_device_complete(&mut server);
@@ -39,11 +39,67 @@ fn introspect_basic_active() {
 }
 
 #[test]
+fn introspect_active_other_scope_order() {
+    let mut server = Server::new();
+    let url = server.url();
+
+    let config = mock_config(&url, "profile openid".to_string(), true);
+    let oauth_client = OAuthClient::new(&config).unwrap();
+
+    http_mock_device_complete(&mut server);
+    http_mock_token_with_status(&mut server, 200);
+    http_mock_introspect_with_status(&mut server, 200, true);
+
+    let device_details = oauth_client.device_code().unwrap();
+    let token = oauth_client.get_token(&device_details).unwrap();
+    let token = oauth_client.introspect(token.access_token()).unwrap();
+
+    assert_eq!(token.active(), true);
+    assert_eq!(
+        *token.scopes().unwrap(),
+        vec![
+            Scope::new("openid".to_string()),
+            Scope::new("profile".to_string())
+        ]
+    );
+    assert_eq!(oauth_client.validate_token(&token, "test"), true);
+    assert_eq!(oauth_client.validate_token(&token, "non-valid-user"), false);
+}
+
+#[test]
+fn introspect_wrong_scope_active() {
+    let mut server = Server::new();
+    let url = server.url();
+
+    let config = mock_config(&url, "wrong_scope".to_string(), true);
+    let oauth_client = OAuthClient::new(&config).unwrap();
+
+    http_mock_device_complete(&mut server);
+    http_mock_token_with_status(&mut server, 200);
+    http_mock_introspect_with_status(&mut server, 200, true);
+
+    let device_details = oauth_client.device_code().unwrap();
+    let token = oauth_client.get_token(&device_details).unwrap();
+    let token = oauth_client.introspect(token.access_token()).unwrap();
+
+    assert_eq!(token.active(), true);
+    assert_eq!(
+        *token.scopes().unwrap(),
+        vec![
+            Scope::new("openid".to_string()),
+            Scope::new("profile".to_string())
+        ]
+    );
+    assert_eq!(oauth_client.validate_token(&token, "test"), false);
+    assert_eq!(oauth_client.validate_token(&token, "non-valid-user"), false);
+}
+
+#[test]
 fn introspect_basic_inactive() {
     let mut server = Server::new();
     let url = server.url();
 
-    let config = mock_config(&url, None, true);
+    let config = mock_config(&url, "openid profile".to_string(), true);
     let oauth_client = OAuthClient::new(&config).unwrap();
 
     http_mock_device_complete(&mut server);
@@ -64,7 +120,7 @@ fn introspect_common_error() {
     let url = server.url();
     let mut logger = TestLogger::new();
 
-    let config = mock_config(&url, None, true);
+    let config = mock_config(&url, "openid profile".to_string(), true);
     let oauth_client = OAuthClient::new(&config).unwrap();
 
     http_mock_device_complete(&mut server);
@@ -90,7 +146,7 @@ fn introspect_other_error() {
     let url = server.url();
     let mut logger = TestLogger::new();
 
-    let config = mock_config(&url, None, true);
+    let config = mock_config(&url, "openid profile".to_string(), true);
     let oauth_client = OAuthClient::new(&config).unwrap();
 
     http_mock_device_complete(&mut server);

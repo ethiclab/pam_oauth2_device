@@ -1,13 +1,13 @@
 {
-	"clientId": "client-id",
-	"clientSecret": "client-secret",
-	"oauthAuthUrl": "oauth_auth_url",
-	"oauthDeviceUrl": "oauth_device_url",
-	"oauthTokenUrl": "oauth_token_url",
-	"oauthTokenIntrospectUrl": "oauth_token_introspect_url",
+	"client_id": "client-id",
+	"client_secret": "client-secret",
+	"oauth_auth_url": "oauth_auth_url",
+	"oauth_device_url": "oauth_device_url",
+	"oauth_token_url": "oauth_token_url",
+	"oauth_token_introspect_url": "oauth_token_introspect_url",
 	"_comment": {
 		"text": "There are some optional config options. Default values are listed below",
 		"scope": "openid profile",
-		"qrEnabled": true
+		"qr_enabled": true
 	}
 }
