@@ -1,8 +1,22 @@
+use mockito::{Server, ServerGuard};
 use pam_oauth2_device::config::Config;
+use pam_oauth2_device::oauth_device::OAuthClient;
 use url::Url;
 
 #[allow(dead_code)]
-pub(crate) fn mock_config(url: &String, scopes: String, qr: bool) -> Config {
+pub(crate) fn mock_init(scopes: &str) -> (ServerGuard, OAuthClient) {
+    let server = Server::new();
+    let url = server.url();
+
+    let config = mock_config(&url, scopes, true);
+    let oauth_client = OAuthClient::new(&config)
+        .unwrap_or_else(|err| panic!("Failed to create OAuth client: {}", err));
+
+    (server, oauth_client)
+}
+
+#[allow(dead_code)]
+pub(crate) fn mock_config(url: &String, scopes: &str, qr: bool) -> Config {
     Config {
         client_id: "test".to_string(),
         client_secret: "test".to_string(),
@@ -10,7 +24,7 @@ pub(crate) fn mock_config(url: &String, scopes: String, qr: bool) -> Config {
         oauth_device_url: Url::parse(&format!("{}/{}", url, "device")).unwrap(),
         oauth_token_url: Url::parse(&format!("{}/{}", url, "token")).unwrap(),
         oauth_token_introspect_url: Url::parse(&format!("{}/{}", url, "introspect")).unwrap(),
-        scopes,
+        scopes: scopes.to_string(),
         qr_enabled: qr,
     }
 }

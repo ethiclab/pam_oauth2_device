@@ -2,21 +2,15 @@ mod error_logger;
 mod utils;
 
 use error_logger::TestLogger;
-use mockito::Server;
 use oauth2::{Scope, TokenIntrospectionResponse, TokenResponse};
 use pam_oauth2_device::error_logger::Logger;
-use pam_oauth2_device::oauth_device::OAuthClient;
-use utils::{http_mock_device_complete, http_mock_token_with_status, mock_config};
+use utils::{http_mock_device_complete, http_mock_token_with_status};
 
-use crate::utils::http_mock_introspect_with_status;
+use crate::utils::{http_mock_introspect_with_status, mock_init};
 
 #[test]
 fn introspect_basic_active() {
-    let mut server = Server::new();
-    let url = server.url();
-
-    let config = mock_config(&url, "openid profile".to_string(), true);
-    let oauth_client = OAuthClient::new(&config).unwrap();
+    let (mut server, oauth_client) = mock_init("openid profile");
 
     http_mock_device_complete(&mut server);
     http_mock_token_with_status(&mut server, 200);
@@ -40,11 +34,7 @@ fn introspect_basic_active() {
 
 #[test]
 fn introspect_active_other_scope_order() {
-    let mut server = Server::new();
-    let url = server.url();
-
-    let config = mock_config(&url, "profile openid".to_string(), true);
-    let oauth_client = OAuthClient::new(&config).unwrap();
+    let (mut server, oauth_client) = mock_init("profile openid");
 
     http_mock_device_complete(&mut server);
     http_mock_token_with_status(&mut server, 200);
@@ -68,11 +58,7 @@ fn introspect_active_other_scope_order() {
 
 #[test]
 fn introspect_wrong_scope_active() {
-    let mut server = Server::new();
-    let url = server.url();
-
-    let config = mock_config(&url, "wrong_scope".to_string(), true);
-    let oauth_client = OAuthClient::new(&config).unwrap();
+    let (mut server, oauth_client) = mock_init("wrong_scope");
 
     http_mock_device_complete(&mut server);
     http_mock_token_with_status(&mut server, 200);
@@ -96,11 +82,7 @@ fn introspect_wrong_scope_active() {
 
 #[test]
 fn introspect_basic_inactive() {
-    let mut server = Server::new();
-    let url = server.url();
-
-    let config = mock_config(&url, "openid profile".to_string(), true);
-    let oauth_client = OAuthClient::new(&config).unwrap();
+    let (mut server, oauth_client) = mock_init("openid profile");
 
     http_mock_device_complete(&mut server);
     http_mock_token_with_status(&mut server, 200);
@@ -116,12 +98,8 @@ fn introspect_basic_inactive() {
 
 #[test]
 fn introspect_common_error() {
-    let mut server = Server::new();
-    let url = server.url();
+    let (mut server, oauth_client) = mock_init("openid profile");
     let mut logger = TestLogger::new();
-
-    let config = mock_config(&url, "openid profile".to_string(), true);
-    let oauth_client = OAuthClient::new(&config).unwrap();
 
     http_mock_device_complete(&mut server);
     http_mock_token_with_status(&mut server, 200);
@@ -142,12 +120,8 @@ fn introspect_common_error() {
 
 #[test]
 fn introspect_other_error() {
-    let mut server = Server::new();
-    let url = server.url();
+    let (mut server, oauth_client) = mock_init("openid profile");
     let mut logger = TestLogger::new();
-
-    let config = mock_config(&url, "openid profile".to_string(), true);
-    let oauth_client = OAuthClient::new(&config).unwrap();
 
     http_mock_device_complete(&mut server);
     http_mock_token_with_status(&mut server, 200);

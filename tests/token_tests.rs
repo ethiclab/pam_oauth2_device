@@ -13,7 +13,7 @@ fn token_basic() {
     let mut server = Server::new();
     let url = server.url();
 
-    let config = mock_config(&url, "openid profile".to_string(), true);
+    let config = mock_config(&url, "openid profile", true);
     let oauth_client = OAuthClient::new(&config).unwrap();
 
     http_mock_device_complete(&mut server);
@@ -37,7 +37,7 @@ fn token_basic_err() {
     let mut server = Server::new();
     let url = server.url();
 
-    let config = mock_config(&url, "openid profile".to_string(), true);
+    let config = mock_config(&url, "openid profile", true);
     let oauth_client = OAuthClient::new(&config).unwrap();
 
     http_mock_device_complete(&mut server);
@@ -61,7 +61,7 @@ fn token_other_err() {
     let mut server = Server::new();
     let url = server.url();
 
-    let config = mock_config(&url, "openid profile".to_string(), true);
+    let config = mock_config(&url, "openid profile", true);
     let oauth_client = OAuthClient::new(&config).unwrap();
 
     http_mock_device_complete(&mut server);

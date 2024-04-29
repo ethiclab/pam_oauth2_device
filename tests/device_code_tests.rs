@@ -1,6 +1,6 @@
 mod error_logger;
 mod utils;
-use crate::utils::{http_mock_device_basic, http_mock_device_complete, mock_config};
+use crate::utils::{http_mock_device_basic, http_mock_device_complete, mock_config, mock_init};
 use error_logger::TestLogger;
 use mockito::Server;
 use pam_oauth2_device::error_logger::Logger;
@@ -9,11 +9,7 @@ use pam_oauth2_device::prompt::{qr_code, UserPrompt};
 
 #[test]
 fn device_basic_uri() {
-    let mut server = Server::new();
-    let url = server.url();
-
-    let config = mock_config(&url, "openid profile".to_string(), true);
-    let oauth_client = OAuthClient::new(&config).unwrap();
+    let (mut server, oauth_client) = mock_init("openid profile");
 
     http_mock_device_basic(&mut server);
 
@@ -45,11 +41,7 @@ fn device_basic_uri() {
 
 #[test]
 fn device_uri_complete() {
-    let mut server = Server::new();
-    let url = server.url();
-
-    let config = mock_config(&url, "openid profile".to_string(), true);
-    let oauth_client = OAuthClient::new(&config).unwrap();
+    let (mut server, oauth_client) = mock_init("openid profile");
 
     http_mock_device_complete(&mut server);
 
@@ -90,7 +82,7 @@ fn err_500_device() {
     let url = server.url();
     let mut logger = TestLogger::new();
 
-    let config = mock_config(&url, "openid profile".to_string(), true);
+    let config = mock_config(&url, "openid profile", true);
     let oauth_client = OAuthClient::new(&config).unwrap();
 
     server
