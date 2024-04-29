@@ -22,15 +22,16 @@ CONF_NAME :=device-flow-auth
 
 DEBUG ?=
 
-$(info debug is $(DEBUG))
-
 ifdef DEBUG
+  $(info debug is $(DEBUG))
   RELEASE :=
   TARGET := debug
 else
   RELEASE := --release
   TARGET := release
 endif
+
+default: test build
 
 build:
 	cargo build $(RELEASE)
@@ -43,5 +44,11 @@ install:
 	gcc -o target/pam_test test.c -lpam -lpam_misc
 test:
 	cargo test $(RELEASE)
+
+uninstall:
+	rm $(PAM_MOD_PATH)/$(OUTPUT)
+
+clean:
+	cargo clean
 
 all: test build install
