@@ -2,19 +2,15 @@ mod error_logger;
 mod utils;
 
 use error_logger::TestLogger;
-use mockito::Server;
 use oauth2::{basic::BasicTokenType, TokenResponse};
 use pam_oauth2_device::error_logger::Logger;
-use pam_oauth2_device::oauth_device::OAuthClient;
-use utils::{http_mock_device_complete, http_mock_token_with_status, mock_config};
+use utils::{http_mock_device_complete, http_mock_token_with_status};
+
+use crate::utils::mock_init;
 
 #[test]
 fn token_basic() {
-    let mut server = Server::new();
-    let url = server.url();
-
-    let config = mock_config(&url, "openid profile", true);
-    let oauth_client = OAuthClient::new(&config).unwrap();
+    let (mut server, oauth_client) = mock_init("openid profile");
 
     http_mock_device_complete(&mut server);
     http_mock_token_with_status(&mut server, 200);
@@ -33,12 +29,8 @@ fn token_basic() {
 
 #[test]
 fn token_basic_err() {
+    let (mut server, oauth_client) = mock_init("openid profile");
     let mut logger = TestLogger::new();
-    let mut server = Server::new();
-    let url = server.url();
-
-    let config = mock_config(&url, "openid profile", true);
-    let oauth_client = OAuthClient::new(&config).unwrap();
 
     http_mock_device_complete(&mut server);
     http_mock_token_with_status(&mut server, 403);
@@ -57,12 +49,8 @@ fn token_basic_err() {
 
 #[test]
 fn token_other_err() {
+    let (mut server, oauth_client) = mock_init("openid profile");
     let mut logger = TestLogger::new();
-    let mut server = Server::new();
-    let url = server.url();
-
-    let config = mock_config(&url, "openid profile", true);
-    let oauth_client = OAuthClient::new(&config).unwrap();
 
     http_mock_device_complete(&mut server);
     http_mock_token_with_status(&mut server, 101);

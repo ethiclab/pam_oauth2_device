@@ -33,7 +33,7 @@ fn introspect_basic_active() {
 }
 
 #[test]
-fn introspect_active_other_scope_order() {
+fn introspect_active_custom_scope_order() {
     let (mut server, oauth_client) = mock_init("profile openid");
 
     http_mock_device_complete(&mut server);
