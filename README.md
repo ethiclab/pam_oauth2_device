@@ -78,7 +78,7 @@ If you installed the module using the Makefile, you should find a testing utilit
                                  # Just the name of PAM config under /etc/pam.d/. Not a path!
 ./target/pam_test <pam-username> device-flow-auth 
 ```
-Make sure to replace <pam-username> with the actual username configured in your system.
+Make sure to replace `<pam-username>` with the actual username configured in your system.
 
 ## SElinux config
 Setting one of this booleans should be sufficient: `authlogin_yubikey` or `nis_enabled`.
