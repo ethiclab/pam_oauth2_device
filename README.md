@@ -67,7 +67,7 @@ The configuration file (`config.json`) must be a valid JSON file with all requir
 | `scope`                      | OAuth 2.0 Access Scopes (optional)          | No       | `openid profile`     |
 | `qr_enabled`                 | If set to true, a QR code will be generated from either verification_uri_complete or verification_uri (optional) | No       | `true`               |
 
-Look at [example-config.json](#).
+Look at [example-config.json](./config.json).
 
 ### Redirect URI
 The redirect URI is hardcoded as a `urn:ietf:wg:oauth:2.0:oob` value because the PAM module is Out of Band. You need to configure this redirect URI in your OAuth client settings.
