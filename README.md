@@ -39,7 +39,7 @@ Alternatively, you can test and build it manually:
 cargo test [--release]
 cargo build [--release]
 ```
-The module file should then be located at either `target/debug/libpam_oauth2_device.so` or `target/release/libpam_oauth2_device.so`, and it can be copy to the PAM modules path (`lib64/security/`).
+The module file should then be located at either `target/debug/libpam_oauth2_device.so` or `target/release/libpam_oauth2_device.so`, and it can be copy to the PAM modules path (`/lib64/security/`).
 
 ## Configuration
 #### Arguments
