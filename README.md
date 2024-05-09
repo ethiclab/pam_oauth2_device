@@ -42,18 +42,22 @@ cargo build [--release]
 The module file should then be located at either `target/debug/libpam_oauth2_device.so` or `target/release/libpam_oauth2_device.so`, and it can be copy to the PAM modules path (`lib64/security/`).
 
 ## Configuration
-Module requires only one argument, which is a configuration path. You must specify this path using the `config` keyword because that's how the parser works. Please refer to the example below:
+#### Arguments
+The module requires a configuration file. You can specify the path to this file using the `config` keyword, as that's how the parser works. Please refer to the example below:
 ```conf
 auth       sufficient   pam_oauth2_device.so config=/etc/pam_oauth2_device/config.json
 ```
+The `config` argument is not required, but it is recommended to set it up. Otherwise, the default configuration path (`/etc/pam_oauth2_device/config.json`) will be used.
+
 Module also parses two optional arguments:
 - `logs`: Specifies the logging path (default: `/tmp/pam_oauth2_device`),
-- `log_level`: Specifies the logging level filter (default: `info`).
+- `log_level`: Specifies the logging level filter (default: `info`). Possible options: `info`, `warn`, `error`, `debug`, `trace`, and `none`.
 
 Example: 
 ```conf
 auth       sufficient   pam_oauth2_device.so config=/etc/pam_oauth2_device/config.json logs=/var/log/pam_oauth2_device/log log_level=warn
 ```
+#### Config file
 
 The configuration file (`config.json`) must be a valid JSON file with all required fields properly set:
 | Field                        | Description                                 | Required | Default Value        |
