@@ -75,14 +75,14 @@ impl PamHooks for PamOAuth2Device {
             "Failed to build OAuth client",
             PamResultCode::PAM_SYSTEM_ERR
         );
-        log::debug!("OAuth Client: {:?}", oauth_client);
+        log::debug!("OAuth Client: {:#?}", oauth_client);
 
         let device_code_resp = or_pam_err!(
             oauth_client.device_code(),
             "Failed to recive device code response",
             PamResultCode::PAM_AUTH_ERR
         );
-        log::debug!("Device Code response: {:?}", device_code_resp);
+        log::debug!("Device Code response: {:#?}", device_code_resp);
 
         let mut user_prompt = UserPrompt::new(
             &device_code_resp,
@@ -92,7 +92,7 @@ impl PamHooks for PamOAuth2Device {
             log::debug!("Generate QR code...");
             user_prompt.generate_qr();
         }
-        log::debug!("User prompt: {:?}", user_prompt);
+        log::debug!("User prompt: {:#?}", user_prompt);
 
         // Render user prompt
         pam_try!(conv.send(PAM_PROMPT_ECHO_OFF, &user_prompt.to_string()));
@@ -102,14 +102,14 @@ impl PamHooks for PamOAuth2Device {
             "Failed to recive user token",
             PamResultCode::PAM_AUTH_ERR
         );
-        log::debug!("Token response: {:?}", token);
+        log::debug!("Token response: {:#?}", token);
 
         let token = or_pam_err!(
             oauth_client.introspect(&token.access_token()),
             "Failed to introspect user token",
             PamResultCode::PAM_AUTH_ERR
         );
-        log::debug!("Introspect response: {:?}", token);
+        log::debug!("Introspect response: {:#?}", token);
 
         if oauth_client.validate_token(&token, &user) {
             let username = token.username().unwrap(); //it is safe cause of token validatiaon
