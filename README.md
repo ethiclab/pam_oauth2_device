@@ -27,6 +27,11 @@ dnf install rustc cargo gcc pam-devel
 apt install rustc cargo build-essential libpam-dev
 ```
 ## Installation
+You can install it with provided RPM:
+```shell
+rpm -i rpm/pam_oauth2_device.so-0.1.1-1.x86_64.rpm
+```
+
 You can use the provided Makefile:
 ```shell
 make all
