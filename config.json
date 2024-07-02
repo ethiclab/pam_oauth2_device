@@ -8,6 +8,14 @@
 	"_comment": {
 		"text": "There are some optional config options. Default values are listed below",
 		"scope": "openid profile",
-		"qr_enabled": true
+		"qr_enabled": true,
+		"massages": {
+			"prompt_complete": "Scan QR code above or login via provided link in your web browser:",
+			"prompt_no_qr_complete": "Login via provided link in your web browser:",
+			"prompt_incomplete": "Scan QR code above or open provided link in your web browser:",
+			"prompt_no_qr_incomplete": "Open provided link in your web browser:",
+			"prompt_code": "And enter this unique code:",
+			"prompt_enter": "Press \"ENTER\" after successful authentication:"
+		}
 	}
 }

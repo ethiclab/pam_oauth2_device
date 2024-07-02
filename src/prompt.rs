@@ -5,6 +5,8 @@ use oauth2::{UserCode, VerificationUriComplete};
 use qrcode::render::unicode;
 use qrcode::QrCode;
 
+use crate::config::Messages;
+
 struct QrString(String);
 
 impl QrString {
@@ -29,17 +31,20 @@ pub struct UserPrompt {
     verification_uri_complete: Option<VerificationUriComplete>,
     verification_uri: String,
     user_code: UserCode,
-    msg: String,
+    messages: Messages,
 }
 
 impl UserPrompt {
-    pub fn new(device_code_resp: &StandardDeviceAuthorizationResponse, msg: &str) -> Self {
+    pub fn new(
+        device_code_resp: &StandardDeviceAuthorizationResponse,
+        messages: &Messages,
+    ) -> Self {
         Self {
             qrcode: None,
             verification_uri_complete: device_code_resp.verification_uri_complete().cloned(),
             verification_uri: device_code_resp.verification_uri().to_string(),
             user_code: device_code_resp.user_code().to_owned(),
-            msg: msg.to_string(),
+            messages: messages.clone(),
         }
     }
 
@@ -74,35 +79,35 @@ impl Display for UserPrompt {
                 f,
                 "\n{}\n{}\n{}\n{}",
                 qr.secret(),
-                "Scan QR code above or login via provided link in your web browser:",
+                &self.messages.prompt_complete,
                 url.secret(),
-                self.msg
+                &self.messages.prompt_enter
             ),
             (None, Some(url)) => write!(
                 f,
                 "\n{}\n{}\n{}",
-                "Login via provided link in your web browser:",
+                &self.messages.prompt_no_qr_complete,
                 url.secret(),
-                self.msg
+                &self.messages.prompt_enter
             ),
             (Some(qr), None) => write!(
                 f,
                 "\n{}\n{}\n{}\n{}\n{}\n{}",
                 qr.secret(),
-                "Scan QR code above or open provided link in your web browser:",
+                &self.messages.prompt_incomplete,
                 self.verification_uri,
-                "And enter this uniqe code:",
+                &self.messages.prompt_code,
                 self.user_code.secret(),
-                self.msg
+                &self.messages.prompt_enter
             ),
             (None, None) => write!(
                 f,
                 "\n{}\n{}\n{}\n{}\n{}",
-                "Open provided link in your web browser:",
+                &self.messages.prompt_no_qr_incomplete,
                 self.verification_uri,
-                "And enter this uniqe code:",
+                &self.messages.prompt_code,
                 self.user_code.secret(),
-                self.msg
+                &self.messages.prompt_enter
             ),
         }
     }

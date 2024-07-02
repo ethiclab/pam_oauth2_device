@@ -75,6 +75,14 @@ The configuration file (`config.json`) must be a valid JSON file with all requir
 | `oauth_token_introspect_url` | OAuth 2.0 Token Introspection endpoint URL  | Yes      | -                    |
 | `scope`                      | OAuth 2.0 Access Scopes (optional)          | No       | `openid profile`     |
 | `qr_enabled`                 | If set to true, a QR code will be generated from either verification_uri_complete or verification_uri (optional) | No       | `true`               |
+| `messages`                   | An object containing the contents of messages displayed to the user | No       | {...} |
+| `messages.prompt_complete`   | Content of prompt message if the `verification_uri_complete` is returned by OAuth server and QR code is displayed | No | shown in `example-config.json` |
+| `messages.prompt_no_qr_complete`   | The same as `prompt_complete` but when the QR code is not displayed | No | shown in `example-config.json` |
+| `messages.prompt_incomplete`   | Content of prompt message if the `verification_uri_complete` is **not** returned by OAuth server and QR code is displayed | No | shown in `example-config.json` |
+| `messages.prompt_no_qr_incomplete`   | The same as `prompt_incomplete` but when the QR code is not displayed | No | shown in `example-config.json` |
+| `messages.prompt_code`   | Content of prompt message that is prited before `user_code` if the `verification_uri_complete` has not been returned form the server  | No | shown in `example-config.json` |
+| `messages.prompt_enter`   | Content of the prompt message encouraging the user to press enter after authentication | No | shown in `example-config.json` |
+
 
 Look at [example-config.json](./config.json).
 

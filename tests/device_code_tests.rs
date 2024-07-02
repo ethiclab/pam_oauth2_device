@@ -3,6 +3,7 @@ mod utils;
 use crate::utils::{http_mock_device_basic, http_mock_device_complete, mock_config, mock_init};
 use error_logger::TestLogger;
 use mockito::Server;
+use pam_oauth2_device::config::Messages;
 use pam_oauth2_device::error_logger::Logger;
 use pam_oauth2_device::oauth_device::OAuthClient;
 use pam_oauth2_device::prompt::{qr_code, UserPrompt};
@@ -15,7 +16,7 @@ fn device_basic_uri() {
 
     let resp = oauth_client.device_code().unwrap();
 
-    let mut prompt = UserPrompt::new(&resp, "");
+    let mut prompt = UserPrompt::new(&resp, &Messages::default());
 
     assert_eq!(resp.device_code().secret(), "mocking_device_code");
     assert_eq!(resp.user_code().secret(), "mocking_user_code");
@@ -24,7 +25,7 @@ fn device_basic_uri() {
     assert_eq!(resp.interval().as_secs(), 5);
 
     // No QR code generated
-    assert_eq!(prompt.to_string(), "\nOpen provided link in your web browser:\nhttps://mocking.uri/\nAnd enter this uniqe code:\nmocking_user_code\n");
+    assert_eq!(prompt.to_string(), "\nOpen provided link in your web browser:\nhttps://mocking.uri/\nAnd enter this unique code:\nmocking_user_code\nPress \"ENTER\" after successful authentication:");
 
     prompt.generate_qr();
 
@@ -34,7 +35,7 @@ fn device_basic_uri() {
         format!(
             "\n{}\n{}",
             qr_code(&"https://mocking.uri/".to_string()).unwrap(),
-            "Scan QR code above or open provided link in your web browser:\nhttps://mocking.uri/\nAnd enter this uniqe code:\nmocking_user_code\n"
+            "Scan QR code above or open provided link in your web browser:\nhttps://mocking.uri/\nAnd enter this unique code:\nmocking_user_code\nPress \"ENTER\" after successful authentication:"
         )
     );
 }
@@ -47,7 +48,7 @@ fn device_uri_complete() {
 
     let resp = oauth_client.device_code().unwrap();
 
-    let mut prompt = UserPrompt::new(&resp, "");
+    let mut prompt = UserPrompt::new(&resp, &Messages::default());
 
     assert_eq!(resp.device_code().secret(), "mocking_device_code");
     assert_eq!(resp.user_code().secret(), "mocking_user_code");
@@ -62,7 +63,7 @@ fn device_uri_complete() {
     // No QR code generated
     assert_eq!(
         prompt.to_string(),
-        "\nLogin via provided link in your web browser:\nhttps://mocking.uri/mocking_user_code\n"
+        "\nLogin via provided link in your web browser:\nhttps://mocking.uri/mocking_user_code\nPress \"ENTER\" after successful authentication:"
     );
 
     prompt.generate_qr();
@@ -70,7 +71,7 @@ fn device_uri_complete() {
     assert_eq!(
         prompt.to_string(),
         format!(
-            "\n{}\nScan QR code above or login via provided link in your web browser:\nhttps://mocking.uri/mocking_user_code\n",
+            "\n{}\nScan QR code above or login via provided link in your web browser:\nhttps://mocking.uri/mocking_user_code\nPress \"ENTER\" after successful authentication:",
             qr_code(&"https://mocking.uri/mocking_user_code".to_string()).unwrap()
         )
     );

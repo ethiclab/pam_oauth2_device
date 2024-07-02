@@ -84,10 +84,7 @@ impl PamHooks for PamOAuth2Device {
         );
         log::debug!("Device Code response: {:#?}", device_code_resp);
 
-        let mut user_prompt = UserPrompt::new(
-            &device_code_resp,
-            "Press \"ENTER\" after successful authentication: ",
-        );
+        let mut user_prompt = UserPrompt::new(&device_code_resp, &config.messages);
         if config.qr_enabled {
             log::debug!("Generate QR code...");
             user_prompt.generate_qr();

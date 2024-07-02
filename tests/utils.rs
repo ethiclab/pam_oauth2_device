@@ -1,5 +1,5 @@
 use mockito::{Server, ServerGuard};
-use pam_oauth2_device::config::Config;
+use pam_oauth2_device::config::{Config, Messages};
 use pam_oauth2_device::oauth_device::OAuthClient;
 use url::Url;
 
@@ -26,6 +26,7 @@ pub(crate) fn mock_config(url: &String, scopes: &str, qr: bool) -> Config {
         oauth_token_introspect_url: Url::parse(&format!("{}/{}", url, "introspect")).unwrap(),
         scopes: scopes.to_string(),
         qr_enabled: qr,
+        messages: Messages::default(),
     }
 }
 
