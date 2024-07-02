@@ -10,7 +10,6 @@ description = "PAM module that enables OAuth2.0 Device Authorization Grant"
 name = "pam_oauth2_device"
 crate-type = ["cdylib", "lib"]
 [dependencies]
-cargo-generate-rpm = "0.14.1"
 chrono = "0.4.37"
 file-rotate = "0.7.5"
 log = "0.4.21"
