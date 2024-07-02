@@ -2,13 +2,15 @@
 name = "pam_oauth2_device"
 version = "0.1.1"
 edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "PAM module that enables OAuth2.0 Device Authorization Grant"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "pam_oauth2_device"
 crate-type = ["cdylib", "lib"]
-
 [dependencies]
+cargo-generate-rpm = "0.14.1"
 chrono = "0.4.37"
 file-rotate = "0.7.5"
 log = "0.4.21"
@@ -23,3 +25,13 @@ url = { version = "2.5.0", features = ["serde"] }
 [dev-dependencies]
 mockito = "1.4.0"
 
+[package.metadata.generate-rpm]
+name = "pam_oauth2_device.so"
+assets = [
+    { source = "target/release/libpam_oauth2_device.so", dest = "/usr/lib64/security/pam_oauth2_device.so", mode = "755" },
+    { source = "conf/device-flow-auth", dest="/etc/pam.d/device-flow-auth", mode = "644" },
+    { source = "config.json", dest = "/etc/pam_oauth2_device/example-config.json", mode = "644" }
+]
+
+[package.metadata.generate-rpm.requires]
+pam-devel = "*"
