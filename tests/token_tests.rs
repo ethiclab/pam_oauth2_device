@@ -1,23 +1,18 @@
-mod error_logger;
+mod test_logger;
 mod utils;
 
-use error_logger::TestLogger;
-use mockito::Server;
 use oauth2::{basic::BasicTokenType, TokenResponse};
 use pam_oauth2_device::error_logger::Logger;
-use pam_oauth2_device::oauth_device::OAuthClient;
-use utils::{http_mock_device_complete, http_mock_token_with_status, mock_config};
+use utils::Mock;
+
+use test_logger::LOGGER;
 
 #[test]
 fn token_basic() {
-    let mut server = Server::new();
-    let url = server.url();
+    let (mut mock, oauth_client) = Mock::builder().init(None);
 
-    let config = mock_config(&url, None, true);
-    let oauth_client = OAuthClient::new(&config).unwrap();
-
-    http_mock_device_complete(&mut server);
-    http_mock_token_with_status(&mut server, 200);
+    mock.http_device_complete();
+    mock.http_token_with_status(200);
 
     let device_details = oauth_client.device_code().unwrap();
     let token = oauth_client.get_token(&device_details).unwrap();
@@ -33,15 +28,11 @@ fn token_basic() {
 
 #[test]
 fn token_basic_err() {
-    let mut logger = TestLogger::new();
-    let mut server = Server::new();
-    let url = server.url();
+    let (mut mock, oauth_client) = Mock::builder().init(None);
+    let logger = LOGGER.lock().unwrap();
 
-    let config = mock_config(&url, None, true);
-    let oauth_client = OAuthClient::new(&config).unwrap();
-
-    http_mock_device_complete(&mut server);
-    http_mock_token_with_status(&mut server, 403);
+    mock.http_device_complete();
+    mock.http_token_with_status(403);
 
     let device_details = oauth_client.device_code().unwrap();
     let token = oauth_client.get_token(&device_details);
@@ -50,22 +41,18 @@ fn token_basic_err() {
     let _ = token.map_err(|err| logger.handle_error(err, "Failed to recive user token"));
 
     assert_eq!(
-        logger.msg,
+        logger.msg(),
         "Failed to recive user token\n    caused by: Server returned error response"
     );
 }
 
 #[test]
 fn token_other_err() {
-    let mut logger = TestLogger::new();
-    let mut server = Server::new();
-    let url = server.url();
+    let (mut mock, oauth_client) = Mock::builder().init(None);
+    let logger = LOGGER.lock().unwrap();
 
-    let config = mock_config(&url, None, true);
-    let oauth_client = OAuthClient::new(&config).unwrap();
-
-    http_mock_device_complete(&mut server);
-    http_mock_token_with_status(&mut server, 101);
+    mock.http_device_complete();
+    mock.http_token_with_status(101);
 
     let device_details = oauth_client.device_code().unwrap();
     let token = oauth_client.get_token(&device_details);
@@ -74,7 +61,7 @@ fn token_other_err() {
     let _ = token.map_err(|err| logger.handle_error(err, "Failed to recive user token"));
 
     assert_eq!(
-        logger.msg,
+        logger.msg(),
         "Failed to recive user token\n    caused by: Other error: Server returned empty error response"
     );
 }

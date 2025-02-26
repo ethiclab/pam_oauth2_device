@@ -1,4 +1,5 @@
 use crate::config::Config;
+use chrono::{DateTime, Utc};
 use oauth2::basic::{BasicClient, BasicTokenType};
 use oauth2::devicecode::StandardDeviceAuthorizationResponse;
 use oauth2::reqwest::http_client;
@@ -12,7 +13,7 @@ type DynErr = Box<dyn std::error::Error>;
 #[derive(Debug)]
 pub struct OAuthClient {
     client: BasicClient,
-    scope: Vec<Scope>,
+    scopes: Vec<Scope>,
 }
 
 impl OAuthClient {
@@ -35,14 +36,21 @@ impl OAuthClient {
             .set_introspection_uri(introspect_url)
             .set_redirect_uri(redirect_url);
 
-        Ok(Self { client, scope })
+        Ok(Self {
+            client,
+            scopes: scope,
+        })
+    }
+
+    pub fn scopes(&self) -> &[Scope] {
+        &self.scopes
     }
 
     pub fn device_code(&self) -> Result<StandardDeviceAuthorizationResponse, DynErr> {
         let details: StandardDeviceAuthorizationResponse = self
             .client
             .exchange_device_code()?
-            .add_scopes(self.scope.clone())
+            .add_scopes(self.scopes.clone())
             .request(http_client)?;
         Ok(details)
     }
@@ -70,7 +78,7 @@ impl OAuthClient {
     pub fn validate_token(
         &self,
         token: &impl TokenIntrospectionResponse<BasicTokenType>,
-        user: &str,
+        local_user: &str,
     ) -> bool {
         if !token.active() {
             log::warn!("User token inactive!");
@@ -79,47 +87,66 @@ impl OAuthClient {
 
         let username_valid = token.username().map_or_else(
             || {
-                log::warn!("No username provided");
+                log::warn!("No username provided in token");
                 false
             },
-            |username| {
-                if username != user {
-                    log::warn!("Invalid username: remote: {} -> local: {}", username, &user);
-                    false
-                } else {
-                    true
-                }
-            },
+            |remote_username| valid_user(remote_username, local_user),
         );
 
         let scope_valid = token.scopes().map_or_else(
             || {
-                log::warn!("No scope provided");
+                log::warn!("No scope provided in token");
                 false
             },
-            |scopes| {
-                // Scopes order doesn't matter according to RFC 6749
-                if !self.scope.iter().all(|s| scopes.contains(s)) {
-                    log::warn!("Invalid scopes for user {}: {:?}", &user, self.scope,);
-                    false
-                } else {
-                    true
-                }
-            },
+            |token_scopes| valid_scopes(&self.scopes, &token_scopes, &local_user),
         );
 
         let exp_valid = token.exp().map_or_else(
             || {
-                log::warn!("No expiration time provided");
+                log::warn!("No expiration time provided in token");
                 false
             },
-            |exp| exp > chrono::Local::now(),
+            |exp| valid_exp(exp, local_user),
         );
-
-        if !exp_valid {
-            log::warn!("Token has expired for user {}", &user);
-        }
 
         username_valid && scope_valid && exp_valid
     }
+}
+
+fn valid_user(remote_username: &str, local_username: &str) -> bool {
+    //remote user cannot be root
+    if remote_username == local_username && remote_username != "root" {
+        return true;
+    }
+    log::warn!(
+        "Invalid username: remote: {} -> local: {}",
+        remote_username,
+        &local_username
+    );
+    false
+}
+
+fn valid_scopes(required_scopes: &[Scope], token_scopes: &[Scope], user: &str) -> bool {
+    // Scopes order doesn't matter according to RFC 6749
+    if required_scopes.iter().all(|s| token_scopes.contains(s)) {
+        return true;
+    }
+    let display_scopes = token_scopes
+        .iter()
+        .map(|s| s.to_string())
+        .collect::<Vec<String>>();
+    log::warn!(
+        "Insuficient scopes for user {}: {:?}",
+        &user,
+        display_scopes
+    );
+    false
+}
+
+fn valid_exp(exp: DateTime<Utc>, user: &str) -> bool {
+    if exp <= Utc::now() {
+        log::warn!("Token has expired for user {}", &user);
+    }
+
+    exp > Utc::now()
 }

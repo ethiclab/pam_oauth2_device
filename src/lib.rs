@@ -30,7 +30,7 @@ macro_rules! or_pam_err {
         match $res {
             Ok(o) => o,
             Err(e) => {
-                let mut logger = DefaultLogger;
+                let logger = DefaultLogger;
                 logger.handle_error(e, $error_message);
                 return $pam_error;
             }

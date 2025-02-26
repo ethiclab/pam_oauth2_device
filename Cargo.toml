@@ -9,17 +9,17 @@ name = "pam_oauth2_device"
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
-chrono = "0.4.37"
-file-rotate = "0.7.5"
-log = "0.4.21"
+chrono = "0.4.39"
+file-rotate = "0.7.6"
+log = "0.4.22"
 oauth2 = "4.4.2"
 pam-bindings = "0.1.1"
-qrcode = "0.14.0"
-serde = { varsion = "1.0.197", features = ["derive"] }
-serde_json = "1.0.115"
+qrcode = "0.14.1"
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.135"
 simplelog = "0.12.2"
-url = { version = "2.5.0", features = ["serde"] }
+url = { version = "2.5.4", features = ["serde"] }
 
 [dev-dependencies]
-mockito = "1.4.0"
+mockito = "1.6.1"
 
