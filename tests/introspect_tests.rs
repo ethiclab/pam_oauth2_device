@@ -3,10 +3,10 @@ mod utils;
 
 use chrono::{Duration, Utc};
 use oauth2::{TokenIntrospectionResponse, TokenResponse};
-use pam_oauth2_device::error_logger::Logger;
+use pam_oauth2_device::logger::Logger;
 use utils::Mock;
 
-use test_logger::LOGGER;
+use test_logger::{TestLogger, LOGGER};
 
 #[test]
 fn common_error() {
@@ -22,7 +22,7 @@ fn common_error() {
     let token = oauth_client.introspect(token.access_token());
     assert!(token.is_err());
 
-    let _ = token.map_err(|err| logger.handle_error(err, "Failed to intropsect user token"));
+    let _ = token.map_err(|err| TestLogger::handle_error(err, "Failed to intropsect user token"));
 
     assert_eq!(
         logger.msg(),
@@ -43,7 +43,7 @@ fn other_error() {
     let token = oauth_client.introspect(token.access_token());
     assert!(token.is_err());
 
-    let _ = token.map_err(|err| logger.handle_error(err, "Failed to intropsect user token"));
+    let _ = token.map_err(|err| TestLogger::handle_error(err, "Failed to intropsect user token"));
 
     assert_eq!(
         logger.msg(),

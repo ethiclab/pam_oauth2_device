@@ -2,10 +2,10 @@ mod test_logger;
 mod utils;
 
 use oauth2::{basic::BasicTokenType, TokenResponse};
-use pam_oauth2_device::error_logger::Logger;
+use pam_oauth2_device::logger::Logger;
 use utils::Mock;
 
-use test_logger::LOGGER;
+use test_logger::{TestLogger, LOGGER};
 
 #[test]
 fn token_basic() {
@@ -38,7 +38,7 @@ fn token_basic_err() {
     let token = oauth_client.get_token(&device_details);
     assert!(token.is_err());
 
-    let _ = token.map_err(|err| logger.handle_error(err, "Failed to recive user token"));
+    let _ = token.map_err(|err| TestLogger::handle_error(err, "Failed to recive user token"));
 
     assert_eq!(
         logger.msg(),
@@ -58,7 +58,7 @@ fn token_other_err() {
     let token = oauth_client.get_token(&device_details);
     assert!(token.is_err());
 
-    let _ = token.map_err(|err| logger.handle_error(err, "Failed to recive user token"));
+    let _ = token.map_err(|err| TestLogger::handle_error(err, "Failed to recive user token"));
 
     assert_eq!(
         logger.msg(),

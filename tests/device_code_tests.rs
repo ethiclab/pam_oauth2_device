@@ -1,9 +1,9 @@
 mod test_logger;
 mod utils;
-use pam_oauth2_device::error_logger::Logger;
+use pam_oauth2_device::logger::Logger;
 use pam_oauth2_device::prompt::{qr_code, UserPrompt};
 
-use test_logger::LOGGER;
+use test_logger::{TestLogger, LOGGER};
 use utils::Mock;
 
 #[test]
@@ -92,7 +92,7 @@ fn err_500_device() {
 
     let resp = oauth_client.device_code();
     assert!(resp.is_err());
-    let _ = resp.map_err(|err| logger.handle_error(err, "Failed to get device code"));
+    let _ = resp.map_err(|err| TestLogger::handle_error(err, "Failed to get device code"));
     assert_eq!(
         logger.msg(),
         "Failed to get device code\n    caused by: Server returned error response"
