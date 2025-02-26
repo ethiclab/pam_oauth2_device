@@ -1,37 +1,30 @@
 pub mod config;
-pub mod error_logger;
+pub mod logger;
 pub mod oauth_device;
 pub mod prompt;
 
 use crate::config::read_config;
 use crate::oauth_device::*;
-use file_rotate::{
-    compression::Compression,
-    suffix::{AppendTimestamp, DateFrom, FileLimit},
-    ContentLimit, FileRotate, TimeFrequency,
-};
 use oauth2::{TokenIntrospectionResponse, TokenResponse};
 use pam::constants::{PamFlag, PamResultCode, PAM_PROMPT_ECHO_OFF};
 
 use crate::prompt::UserPrompt;
-use error_logger::{DefaultLogger, Logger};
+use logger::{DefaultLogger, Logger};
 use pam::conv::Conv;
 use pam::module::{PamHandle, PamHooks};
 use pam::pam_try;
-use simplelog::*;
 use std::collections::HashMap;
 use std::ffi::CStr;
 
 pub struct PamOAuth2Device;
 pam::pam_hooks!(PamOAuth2Device);
 
-macro_rules! or_pam_err {
+macro_rules! handle_pam_error {
     ($res:expr, $error_message:expr, $pam_error:expr) => {
         match $res {
             Ok(o) => o,
             Err(e) => {
-                let logger = DefaultLogger;
-                logger.handle_error(e, $error_message);
+                DefaultLogger::handle_error(e, $error_message);
                 return $pam_error;
             }
         }
@@ -46,11 +39,11 @@ impl PamHooks for PamOAuth2Device {
         let default_log_level = "info".to_string();
         let log_path = args.get("logs").unwrap_or(&default_log_path);
         let log_level = args.get("log_level").unwrap_or(&default_log_level);
-        init_logs(&log_path, &log_level);
+        DefaultLogger::init(&log_path, &log_level);
 
-        let default_config = "/etc/pam_oauth2_device/config.json".to_string();
-        let config = read_config(args.get("config").unwrap_or(&default_config));
-        let config = or_pam_err!(
+        let default_config_path = "/etc/pam_oauth2_device/config.json".to_string();
+        let config = read_config(args.get("config").unwrap_or(&default_config_path));
+        let config = handle_pam_error!(
             config.map_err(|err| err.into()),
             "Failed to parse config file",
             PamResultCode::PAM_SYSTEM_ERR
@@ -70,14 +63,14 @@ impl PamHooks for PamOAuth2Device {
         let user = pam_try!(pamh.get_user(None));
         log::info!("Trying to authenticate user: {user}");
 
-        let oauth_client = or_pam_err!(
+        let oauth_client = handle_pam_error!(
             OAuthClient::new(&config),
             "Failed to build OAuth client",
             PamResultCode::PAM_SYSTEM_ERR
         );
         log::debug!("OAuth Client: {:?}", oauth_client);
 
-        let device_code_resp = or_pam_err!(
+        let device_code_resp = handle_pam_error!(
             oauth_client.device_code(),
             "Failed to recive device code response",
             PamResultCode::PAM_AUTH_ERR
@@ -97,14 +90,14 @@ impl PamHooks for PamOAuth2Device {
         // Render user prompt
         pam_try!(conv.send(PAM_PROMPT_ECHO_OFF, &user_prompt.to_string()));
 
-        let token = or_pam_err!(
+        let token = handle_pam_error!(
             oauth_client.get_token(&device_code_resp),
             "Failed to recive user token",
             PamResultCode::PAM_AUTH_ERR
         );
         log::debug!("Token response: {:?}", token);
 
-        let token = or_pam_err!(
+        let token = handle_pam_error!(
             oauth_client.introspect(&token.access_token()),
             "Failed to introspect user token",
             PamResultCode::PAM_AUTH_ERR
@@ -146,33 +139,4 @@ fn parse_args(args: &[&CStr]) -> HashMap<String, String> {
             )
         })
         .collect()
-}
-
-fn init_logs(log_path: &str, log_level: &str) {
-    let log_level = match log_level {
-        "info" => LevelFilter::Info,
-        "warn" => LevelFilter::Warn,
-        "error" => LevelFilter::Error,
-        "debug" => LevelFilter::Debug,
-        "trace" => LevelFilter::Trace,
-        _ => LevelFilter::Info,
-    };
-    let log_file = FileRotate::new(
-        log_path,
-        AppendTimestamp::with_format("%Y-%m-%d", FileLimit::MaxFiles(7), DateFrom::DateYesterday),
-        ContentLimit::Time(TimeFrequency::Daily),
-        Compression::None,
-        #[cfg(unix)]
-        None,
-    );
-    CombinedLogger::init(vec![
-        TermLogger::new(
-            log_level,
-            Config::default(),
-            TerminalMode::Mixed,
-            ColorChoice::Auto,
-        ),
-        WriteLogger::new(log_level, Config::default(), log_file),
-    ])
-    .expect("Failed to inicialize logging!");
 }
