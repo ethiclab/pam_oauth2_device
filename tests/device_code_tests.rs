@@ -1,18 +1,17 @@
-mod error_logger;
+mod test_logger;
 mod utils;
-use crate::utils::{http_mock_device_basic, http_mock_device_complete, mock_config, mock_init};
-use error_logger::TestLogger;
-use mockito::Server;
 use pam_oauth2_device::config::Messages;
-use pam_oauth2_device::error_logger::Logger;
-use pam_oauth2_device::oauth_device::OAuthClient;
+use pam_oauth2_device::logger::Logger;
 use pam_oauth2_device::prompt::{qr_code, UserPrompt};
+
+use test_logger::{TestLogger, LOGGER};
+use utils::Mock;
 
 #[test]
 fn device_basic_uri() {
-    let (mut server, oauth_client) = mock_init("openid profile");
+    let (mut mock, oauth_client) = Mock::builder().init(None);
 
-    http_mock_device_basic(&mut server);
+    mock.http_device_basic();
 
     let resp = oauth_client.device_code().unwrap();
 
@@ -42,9 +41,8 @@ fn device_basic_uri() {
 
 #[test]
 fn device_uri_complete() {
-    let (mut server, oauth_client) = mock_init("openid profile");
-
-    http_mock_device_complete(&mut server);
+    let (mut mock, oauth_client) = Mock::builder().init(None);
+    mock.http_device_complete();
 
     let resp = oauth_client.device_code().unwrap();
 
@@ -79,14 +77,10 @@ fn device_uri_complete() {
 
 #[test]
 fn err_500_device() {
-    let mut server = Server::new();
-    let url = server.url();
-    let mut logger = TestLogger::new();
+    let (mut mock, oauth_client) = Mock::builder().init(None);
+    let logger = LOGGER.lock().unwrap();
 
-    let config = mock_config(&url, "openid profile", true);
-    let oauth_client = OAuthClient::new(&config).unwrap();
-
-    server
+    mock.server
         .mock("POST", "/device")
         .with_status(500)
         .with_body(
@@ -99,9 +93,9 @@ fn err_500_device() {
 
     let resp = oauth_client.device_code();
     assert!(resp.is_err());
-    let _ = resp.map_err(|err| logger.handle_error(err, "Failed to get device code"));
+    let _ = resp.map_err(|err| TestLogger::handle_error(err, "Failed to get device code"));
     assert_eq!(
-        logger.msg,
+        logger.msg(),
         "Failed to get device code\n    caused by: Server returned error response"
     );
 }

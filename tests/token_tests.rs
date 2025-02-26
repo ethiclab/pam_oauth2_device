@@ -1,19 +1,18 @@
-mod error_logger;
+mod test_logger;
 mod utils;
 
-use error_logger::TestLogger;
 use oauth2::{basic::BasicTokenType, TokenResponse};
-use pam_oauth2_device::error_logger::Logger;
-use utils::{http_mock_device_complete, http_mock_token_with_status};
+use pam_oauth2_device::logger::Logger;
+use utils::Mock;
 
-use crate::utils::mock_init;
+use test_logger::{TestLogger, LOGGER};
 
 #[test]
 fn token_basic() {
-    let (mut server, oauth_client) = mock_init("openid profile");
+    let (mut mock, oauth_client) = Mock::builder().init(None);
 
-    http_mock_device_complete(&mut server);
-    http_mock_token_with_status(&mut server, 200);
+    mock.http_device_complete();
+    mock.http_token_with_status(200);
 
     let device_details = oauth_client.device_code().unwrap();
     let token = oauth_client.get_token(&device_details).unwrap();
@@ -29,40 +28,40 @@ fn token_basic() {
 
 #[test]
 fn token_basic_err() {
-    let (mut server, oauth_client) = mock_init("openid profile");
-    let mut logger = TestLogger::new();
+    let (mut mock, oauth_client) = Mock::builder().init(None);
+    let logger = LOGGER.lock().unwrap();
 
-    http_mock_device_complete(&mut server);
-    http_mock_token_with_status(&mut server, 403);
+    mock.http_device_complete();
+    mock.http_token_with_status(403);
 
     let device_details = oauth_client.device_code().unwrap();
     let token = oauth_client.get_token(&device_details);
     assert!(token.is_err());
 
-    let _ = token.map_err(|err| logger.handle_error(err, "Failed to recive user token"));
+    let _ = token.map_err(|err| TestLogger::handle_error(err, "Failed to recive user token"));
 
     assert_eq!(
-        logger.msg,
+        logger.msg(),
         "Failed to recive user token\n    caused by: Server returned error response"
     );
 }
 
 #[test]
 fn token_other_err() {
-    let (mut server, oauth_client) = mock_init("openid profile");
-    let mut logger = TestLogger::new();
+    let (mut mock, oauth_client) = Mock::builder().init(None);
+    let logger = LOGGER.lock().unwrap();
 
-    http_mock_device_complete(&mut server);
-    http_mock_token_with_status(&mut server, 101);
+    mock.http_device_complete();
+    mock.http_token_with_status(101);
 
     let device_details = oauth_client.device_code().unwrap();
     let token = oauth_client.get_token(&device_details);
     assert!(token.is_err());
 
-    let _ = token.map_err(|err| logger.handle_error(err, "Failed to recive user token"));
+    let _ = token.map_err(|err| TestLogger::handle_error(err, "Failed to recive user token"));
 
     assert_eq!(
-        logger.msg,
+        logger.msg(),
         "Failed to recive user token\n    caused by: Other error: Server returned empty error response"
     );
 }
