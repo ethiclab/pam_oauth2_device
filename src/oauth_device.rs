@@ -2,7 +2,9 @@ use crate::config::Config;
 use chrono::{DateTime, Utc};
 use oauth2::basic::{BasicClient, BasicTokenType};
 use oauth2::devicecode::StandardDeviceAuthorizationResponse;
-use oauth2::reqwest::http_client;
+//use oauth2::reqwest::http_client;
+use oauth2::curl::http_client;
+//use oauth2::ureq::http_client;
 use oauth2::{
     AccessToken, AuthUrl, ClientId, ClientSecret, DeviceAuthorizationUrl, IntrospectionUrl,
     RedirectUrl, Scope, TokenIntrospectionResponse, TokenResponse, TokenUrl,

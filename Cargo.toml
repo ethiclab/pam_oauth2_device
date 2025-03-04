@@ -1,6 +1,6 @@
 [package]
 name = "pam_oauth2_device"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "PAM module that enables OAuth2.0 Device Authorization Grant"
@@ -11,10 +11,10 @@ name = "pam_oauth2_device"
 crate-type = ["cdylib", "lib"]
 [dependencies]
 chrono = "0.4.39"
-file-rotate = "0.7.6"
 log = "0.4.22"
-oauth2 = "4.4.2"
-pam-bindings = "0.1.1"
+oauth2 = {version = "4.4.2", features = ["curl"]}
+#pam-bindings = "0.1.1"
+pam-bindings = { path = "/home/nithe/Projects/forks/pam-rs/pam" }
 qrcode = "0.14.1"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.135"

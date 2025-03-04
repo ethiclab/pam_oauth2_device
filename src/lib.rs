@@ -25,6 +25,7 @@ macro_rules! handle_pam_error {
             Ok(o) => o,
             Err(e) => {
                 DefaultLogger::handle_error(e, $error_message);
+                log::logger().flush();
                 return $pam_error;
             }
         }
@@ -34,7 +35,6 @@ macro_rules! handle_pam_error {
 impl PamHooks for PamOAuth2Device {
     fn sm_authenticate(pamh: &mut PamHandle, args: Vec<&CStr>, _flags: PamFlag) -> PamResultCode {
         let args = parse_args(&args);
-
         let default_log_path = "/tmp/pam_oauth2_device.log".to_string();
         let default_log_level = "info".to_string();
         let log_path = args.get("logs").unwrap_or(&default_log_path);
@@ -52,10 +52,13 @@ impl PamHooks for PamOAuth2Device {
         let conv = match pamh.get_item::<Conv>() {
             Ok(Some(conv)) => conv,
             Ok(None) => {
-                unreachable!("No conv available");
+                log::error!("No conv available");
+                log::logger().flush();
+                return PamResultCode::PAM_CONV_ERR;
             }
             Err(err) => {
                 log::error!("Couldn't get pam_conv");
+                log::logger().flush();
                 return err;
             }
         };
@@ -79,7 +82,7 @@ impl PamHooks for PamOAuth2Device {
 
         let mut user_prompt = UserPrompt::new(&device_code_resp, &config.messages);
         if config.qr_enabled {
-            log::debug!("Generate QR code...");
+            log::debug!("Generating QR code...");
             user_prompt.generate_qr();
         }
         log::debug!("User prompt: {:#?}", user_prompt);
@@ -108,20 +111,41 @@ impl PamHooks for PamOAuth2Device {
                 username,
                 user
             );
+            log::logger().flush();
             return PamResultCode::PAM_SUCCESS;
         }
 
         log::warn!("Login failed for user: {user}");
 
+        log::logger().flush();
         PamResultCode::PAM_AUTH_ERR
     }
 
     fn sm_setcred(_pamh: &mut PamHandle, _args: Vec<&CStr>, _flags: PamFlag) -> PamResultCode {
+        log::logger().flush();
         PamResultCode::PAM_SUCCESS
     }
 
     fn acct_mgmt(_pamh: &mut PamHandle, _args: Vec<&CStr>, _flags: PamFlag) -> PamResultCode {
+        log::logger().flush();
         PamResultCode::PAM_SUCCESS
+    }
+
+    fn sm_chauthtok(_pamh: &mut PamHandle, _args: Vec<&CStr>, _flags: PamFlag) -> PamResultCode {
+        log::logger().flush();
+        PamResultCode::PAM_IGNORE
+    }
+    fn sm_open_session(_pamh: &mut PamHandle, _args: Vec<&CStr>, _flags: PamFlag) -> PamResultCode {
+        log::logger().flush();
+        PamResultCode::PAM_IGNORE
+    }
+    fn sm_close_session(
+        _pamh: &mut PamHandle,
+        _args: Vec<&CStr>,
+        _flags: PamFlag,
+    ) -> PamResultCode {
+        log::logger().flush();
+        PamResultCode::PAM_IGNORE
     }
 }
 

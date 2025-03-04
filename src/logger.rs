@@ -1,12 +1,11 @@
-use file_rotate::{
-    compression::Compression,
-    suffix::{AppendTimestamp, DateFrom, FileLimit},
-    ContentLimit, FileRotate, TimeFrequency,
-};
 use log::LevelFilter;
 use simplelog::{ColorChoice, CombinedLogger, Config, TermLogger, TerminalMode, WriteLogger};
+use std::fs::OpenOptions;
+use std::sync::Once;
 
 type DynErr = Box<dyn std::error::Error>;
+
+static LOG_INIT: Once = Once::new();
 
 pub struct DefaultLogger;
 
@@ -26,35 +25,32 @@ impl Logger for DefaultLogger {}
 
 impl DefaultLogger {
     pub fn init(log_path: &str, log_level: &str) {
-        let log_level = match log_level {
-            "info" => LevelFilter::Info,
-            "warn" => LevelFilter::Warn,
-            "error" => LevelFilter::Error,
-            "debug" => LevelFilter::Debug,
-            "trace" => LevelFilter::Trace,
-            _ => LevelFilter::Info,
-        };
-        let log_file = FileRotate::new(
-            log_path,
-            AppendTimestamp::with_format(
-                "%Y-%m-%d",
-                FileLimit::MaxFiles(7),
-                DateFrom::DateYesterday,
-            ),
-            ContentLimit::Time(TimeFrequency::Daily),
-            Compression::None,
-            #[cfg(unix)]
-            None,
-        );
-        CombinedLogger::init(vec![
-            TermLogger::new(
-                log_level,
-                Config::default(),
-                TerminalMode::Mixed,
-                ColorChoice::Auto,
-            ),
-            WriteLogger::new(log_level, Config::default(), log_file),
-        ])
-        .expect("Failed to inicialize logging!");
+        LOG_INIT.call_once(|| {
+            let log_level = match log_level {
+                "info" => LevelFilter::Info,
+                "warn" => LevelFilter::Warn,
+                "error" => LevelFilter::Error,
+                "debug" => LevelFilter::Debug,
+                "trace" => LevelFilter::Trace,
+                _ => LevelFilter::Info,
+            };
+
+            let log_file = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(log_path)
+                .expect("Failed to open log file");
+
+            CombinedLogger::init(vec![
+                //TermLogger::new(
+                //log_level,
+                //Config::default(),
+                //TerminalMode::Mixed,
+                //ColorChoice::Auto,
+                //),
+                WriteLogger::new(log_level, Config::default(), log_file),
+            ])
+            .expect("Failed to inicialize logging!");
+        })
     }
 }

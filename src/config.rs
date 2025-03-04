@@ -41,22 +41,22 @@ pub struct Messages {
 
 impl Messages {
     fn default_complete() -> String {
-        "Scan QR code above or login via provided link in your web browser:".to_string()
+        "Scan the QR code above or open the following link in your web browser:".to_string()
     }
     fn default_no_qr_complete() -> String {
-        "Login via provided link in your web browser:".to_string()
+        "Open the following link in your web browser:".to_string()
     }
     fn default_incomplete() -> String {
-        "Scan QR code above or open provided link in your web browser:".to_string()
+        "Scan the QR code above or open the following link in your web browser:".to_string()
     }
     fn default_no_qr_incomplete() -> String {
-        "Open provided link in your web browser:".to_string()
+        "Open the following link in your web browser:".to_string()
     }
     fn default_code() -> String {
-        "And enter this unique code:".to_string()
+        "Once you're in, enter the following code:".to_string()
     }
     fn default_enter() -> String {
-        "Press \"ENTER\" after successful authentication:".to_string()
+        "Press \"ENTER\" after successful authentication...".to_string()
     }
 }
 
