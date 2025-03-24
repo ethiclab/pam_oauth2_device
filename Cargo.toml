@@ -8,7 +8,7 @@ description = "PAM module that provides OAuth2.0 Device Authorization Grant"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "pam_oauth2_device"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "lib"]
 [dependencies]
 chrono = "0.4.39"
 ctor = "0.4.0"

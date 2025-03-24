@@ -11,12 +11,12 @@
 		"qr_enabled": true,
 		"oauth_device_token_polling_timeout": null,
 		"massages": {
-			"prompt_complete": "Scan QR code above or login via provided link in your web browser:",
-			"prompt_no_qr_complete": "Login via provided link in your web browser:",
-			"prompt_incomplete": "Scan QR code above or open provided link in your web browser:",
-			"prompt_no_qr_incomplete": "Open provided link in your web browser:",
-			"prompt_code": "And enter this unique code:",
-			"prompt_enter": "Press \"ENTER\" after successful authentication:"
+			"prompt_complete": "Scan the QR code above or open the following link in your web browser:",
+			"prompt_no_qr_complete": "Open the following link in your web browser:",
+			"prompt_incomplete": "Scan the QR code above or open the following link in your web browser:",
+			"prompt_no_qr_incomplete": "Open the following link in your web browser:",
+			"prompt_code": "Once you're in, enter the following code:",
+			"prompt_enter": "Press \"ENTER\" after successful authentication..."
 		}
 	}
 }
