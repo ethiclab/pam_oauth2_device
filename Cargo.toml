@@ -1,6 +1,6 @@
 [package]
 name = "pam_oauth2_device"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "PAM module that enables OAuth2.0 Device Authorization Grant"
@@ -8,16 +8,19 @@ description = "PAM module that enables OAuth2.0 Device Authorization Grant"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "pam_oauth2_device"
-crate-type = ["cdylib", "lib"]
+crate-type = ["cdylib"]
 [dependencies]
 chrono = "0.4.39"
+ctor = "0.4.0"
 log = "0.4.22"
 oauth2 = {version = "4.4.2", features = ["curl"]}
-#pam-bindings = "0.1.1"
-pam-bindings = { path = "/home/nithe/Projects/forks/pam-rs/pam" }
+# Using own fork of pam-bindings because the original lib causes mem leaks and has bug in release mode.
+# See https://crates.io/crates/pam-bindings for more info.
+pam-bindings = { git = "https://github.com/Nithe14/pam-rs.git" }
 qrcode = "0.14.1"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.135"
+serde_with = "3.12.0"
 simplelog = "0.12.2"
 url = { version = "2.5.4", features = ["serde"] }
 
@@ -29,7 +32,7 @@ name = "pam_oauth2_device.so"
 assets = [
     { source = "target/release/libpam_oauth2_device.so", dest = "/usr/lib64/security/pam_oauth2_device.so", mode = "755" },
     { source = "conf/device-flow-auth", dest="/etc/pam.d/device-flow-auth", mode = "644" },
-    { source = "config.json", dest = "/etc/pam_oauth2_device/example-config.json", mode = "644" }
+    { source = "example-config.json", dest = "/etc/pam_oauth2_device/example-config.json", mode = "644" }
 ]
 
 [package.metadata.generate-rpm.requires]

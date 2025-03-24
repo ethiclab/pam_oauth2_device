@@ -2,8 +2,10 @@ use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::{Error as IOError, Read};
 use std::result::Result;
+use std::time::Duration;
 use url::Url;
 
+#[serde_with::serde_as]
 #[derive(Serialize, Deserialize)]
 pub struct Config {
     pub client_id: String,
@@ -12,6 +14,9 @@ pub struct Config {
     pub oauth_device_url: Url,
     pub oauth_token_url: Url,
     pub oauth_token_introspect_url: Url,
+    #[serde(default)]
+    #[serde_as(as = "Option<serde_with::DurationSeconds<u64>>")]
+    pub oauth_device_token_polling_timeout: Option<Duration>,
 
     #[serde(default = "default_scopes")]
     pub scopes: String,

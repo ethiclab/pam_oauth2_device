@@ -1,10 +1,10 @@
+use std::time::Duration;
+
 use crate::config::Config;
 use chrono::{DateTime, Utc};
 use oauth2::basic::{BasicClient, BasicTokenType};
-use oauth2::devicecode::StandardDeviceAuthorizationResponse;
-//use oauth2::reqwest::http_client;
 use oauth2::curl::http_client;
-//use oauth2::ureq::http_client;
+use oauth2::devicecode::StandardDeviceAuthorizationResponse;
 use oauth2::{
     AccessToken, AuthUrl, ClientId, ClientSecret, DeviceAuthorizationUrl, IntrospectionUrl,
     RedirectUrl, Scope, TokenIntrospectionResponse, TokenResponse, TokenUrl,
@@ -57,11 +57,12 @@ impl OAuthClient {
     pub fn get_token(
         &self,
         details: &StandardDeviceAuthorizationResponse,
+        timeout: Option<Duration>,
     ) -> Result<impl TokenResponse<BasicTokenType>, DynErr> {
         let token = self.client.exchange_device_access_token(details).request(
             http_client,
             std::thread::sleep,
-            None,
+            timeout,
         )?;
         Ok(token)
     }

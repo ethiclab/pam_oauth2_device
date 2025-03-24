@@ -1,11 +1,14 @@
+use ctor::dtor;
 use log::LevelFilter;
-use simplelog::{ColorChoice, CombinedLogger, Config, TermLogger, TerminalMode, WriteLogger};
+use log::Log;
+
+use simplelog::{ConfigBuilder, WriteLogger};
 use std::fs::OpenOptions;
 use std::sync::Once;
 
 type DynErr = Box<dyn std::error::Error>;
 
-static LOG_INIT: Once = Once::new();
+static INIT: Once = Once::new();
 
 pub struct DefaultLogger;
 
@@ -25,7 +28,7 @@ impl Logger for DefaultLogger {}
 
 impl DefaultLogger {
     pub fn init(log_path: &str, log_level: &str) {
-        LOG_INIT.call_once(|| {
+        INIT.call_once(|| {
             let log_level = match log_level {
                 "info" => LevelFilter::Info,
                 "warn" => LevelFilter::Warn,
@@ -41,16 +44,26 @@ impl DefaultLogger {
                 .open(log_path)
                 .expect("Failed to open log file");
 
-            CombinedLogger::init(vec![
-                //TermLogger::new(
-                //log_level,
-                //Config::default(),
-                //TerminalMode::Mixed,
-                //ColorChoice::Auto,
-                //),
-                WriteLogger::new(log_level, Config::default(), log_file),
-            ])
-            .expect("Failed to inicialize logging!");
-        })
+            let config = ConfigBuilder::new().set_time_format_rfc2822().build();
+            let logger = WriteLogger::new(log_level, config, log_file);
+            log::set_boxed_logger(logger).expect("Failed to init logger!");
+            log::set_max_level(log_level);
+        });
     }
+
+    // Shutdowns global logger
+    pub unsafe fn shutdown() {
+        let logger_ptr = log::logger() as *const dyn Log;
+        if !logger_ptr.is_null() {
+            let boxed_logger = Box::from_raw(logger_ptr as *mut dyn Log);
+            drop(boxed_logger);
+        }
+    }
+}
+
+// Runs just before unloading the .so module
+#[dtor]
+unsafe fn shutdown() {
+    log::logger().flush();
+    DefaultLogger::shutdown();
 }

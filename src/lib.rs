@@ -19,13 +19,12 @@ use std::ffi::CStr;
 pub struct PamOAuth2Device;
 pam::pam_hooks!(PamOAuth2Device);
 
-macro_rules! handle_pam_error {
+macro_rules! try_or_handle {
     ($res:expr, $error_message:expr, $pam_error:expr) => {
         match $res {
             Ok(o) => o,
             Err(e) => {
                 DefaultLogger::handle_error(e, $error_message);
-                log::logger().flush();
                 return $pam_error;
             }
         }
@@ -42,9 +41,9 @@ impl PamHooks for PamOAuth2Device {
         DefaultLogger::init(&log_path, &log_level);
 
         let default_config_path = "/etc/pam_oauth2_device/config.json".to_string();
-        let config = read_config(args.get("config").unwrap_or(&default_config_path));
-        let config = handle_pam_error!(
-            config.map_err(|err| err.into()),
+        let config_path = args.get("config").unwrap_or(&default_config_path);
+        let config = try_or_handle!(
+            read_config(&config_path).map_err(|err| err.into()),
             "Failed to parse config file",
             PamResultCode::PAM_SYSTEM_ERR
         );
@@ -53,27 +52,25 @@ impl PamHooks for PamOAuth2Device {
             Ok(Some(conv)) => conv,
             Ok(None) => {
                 log::error!("No conv available");
-                log::logger().flush();
                 return PamResultCode::PAM_CONV_ERR;
             }
             Err(err) => {
                 log::error!("Couldn't get pam_conv");
-                log::logger().flush();
                 return err;
             }
         };
 
-        let user = pam_try!(pamh.get_user(None));
-        log::info!("Trying to authenticate user: {user}");
+        let local_username = pam_try!(pamh.get_user(None));
+        log::info!("Trying to authenticate user: {local_username}");
 
-        let oauth_client = handle_pam_error!(
+        let oauth_client = try_or_handle!(
             OAuthClient::new(&config),
             "Failed to build OAuth client",
             PamResultCode::PAM_SYSTEM_ERR
         );
         log::debug!("OAuth Client: {:#?}", oauth_client);
 
-        let device_code_resp = handle_pam_error!(
+        let device_code_resp = try_or_handle!(
             oauth_client.device_code(),
             "Failed to recive device code response",
             PamResultCode::PAM_AUTH_ERR
@@ -90,53 +87,47 @@ impl PamHooks for PamOAuth2Device {
         // Render user prompt
         pam_try!(conv.send(PAM_PROMPT_ECHO_OFF, &user_prompt.to_string()));
 
-        let token = handle_pam_error!(
-            oauth_client.get_token(&device_code_resp),
+        let token = try_or_handle!(
+            oauth_client.get_token(&device_code_resp, config.oauth_device_token_polling_timeout),
             "Failed to recive user token",
             PamResultCode::PAM_AUTH_ERR
         );
         log::debug!("Token response: {:#?}", token);
 
-        let token = handle_pam_error!(
+        let token = try_or_handle!(
             oauth_client.introspect(&token.access_token()),
             "Failed to introspect user token",
             PamResultCode::PAM_AUTH_ERR
         );
         log::debug!("Introspect response: {:#?}", token);
 
-        if oauth_client.validate_token(&token, &user) {
-            let username = token.username().unwrap(); //it is safe cause of token validatiaon
+        if oauth_client.validate_token(&token, &local_username) {
+            let remote_username = token.username().unwrap(); //it is safe cause of token validatiaon
             log::info!(
                 "Authentication successful for remote user: {} -> local user: {}",
-                username,
-                user
+                remote_username,
+                local_username
             );
-            log::logger().flush();
             return PamResultCode::PAM_SUCCESS;
         }
 
-        log::warn!("Login failed for user: {user}");
+        log::warn!("Login failed for user: {local_username}");
 
-        log::logger().flush();
         PamResultCode::PAM_AUTH_ERR
     }
 
     fn sm_setcred(_pamh: &mut PamHandle, _args: Vec<&CStr>, _flags: PamFlag) -> PamResultCode {
-        log::logger().flush();
         PamResultCode::PAM_SUCCESS
     }
 
     fn acct_mgmt(_pamh: &mut PamHandle, _args: Vec<&CStr>, _flags: PamFlag) -> PamResultCode {
-        log::logger().flush();
         PamResultCode::PAM_SUCCESS
     }
 
     fn sm_chauthtok(_pamh: &mut PamHandle, _args: Vec<&CStr>, _flags: PamFlag) -> PamResultCode {
-        log::logger().flush();
         PamResultCode::PAM_IGNORE
     }
     fn sm_open_session(_pamh: &mut PamHandle, _args: Vec<&CStr>, _flags: PamFlag) -> PamResultCode {
-        log::logger().flush();
         PamResultCode::PAM_IGNORE
     }
     fn sm_close_session(
@@ -144,7 +135,6 @@ impl PamHooks for PamOAuth2Device {
         _args: Vec<&CStr>,
         _flags: PamFlag,
     ) -> PamResultCode {
-        log::logger().flush();
         PamResultCode::PAM_IGNORE
     }
 }
@@ -155,8 +145,8 @@ fn parse_args(args: &[&CStr]) -> HashMap<String, String> {
             let s = s.to_string_lossy().into_owned();
             let mut parts = s.splitn(2, '=');
             (
-                parts.next().unwrap().to_string(),
-                parts.next().unwrap_or("").to_string(),
+                parts.next().unwrap_or_default().to_string(),
+                parts.next().unwrap_or_default().to_string(),
             )
         })
         .collect()

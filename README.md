@@ -1,30 +1,31 @@
 # PAM module for OAuth 2.0 Device Authorization Grant 
-This PAM module authenticates users using [OAuth 2.0 Device Authorization Grant](https://oauth.net/2/device-flow/). It doesn't have built-in LDAP integration, so **users must be present** in the system before they can log in via this module. The module communicates with the Authorization Server to obtain user prompt data, attempt to retrieve a user `access_token`, and introspect the obtained token. Since the client module needs to introspect the access token via the Authorization Server introspection endpoint, it must be implemented on the server side. If the token is valid, the user is authenticated. The module validates the following fields in the Token Information Response:
+This PAM module authenticates users using [OAuth 2.0 Device Authorization Grant](https://oauth.net/2/device-flow/). It doesn't have built-in LDAP integration, so **users must be present** in the system before they can log in via this module. It works well alongside SSSD. The module communicates with the Authorization Server to obtain user prompt data, attempt to retrieve a user `access_token`, and introspect the obtained token. Since the client module needs to introspect the access token via the Authorization Server introspection endpoint, this endpoint must be implemented on the server side. If the token is valid then the user is authenticated. The module validates the following fields in the Token Information Response:
 - `active`: Must be true.
 - `username`: The username from the `access_token` must match the requested PAM username. The use of "root" as a remote username is prohibited and and will consistently result in failure.
 - `scope`: The scopes must match those requested in the module configuration file. The order of scopes doesn't matter.
-- `exp`: The expiration date is compared to the current system date.
+- `exp`: The expiration date is compared to the current system date converted to UTC.
 
 Only the `auth` PAM module type is implemented in this repo. The `account` type will consistently return success for testing purposes.
 
 This code relies heavily on two libraries:
-- [pam-bindings](https://docs.rs/pam-bindings/0.1.1/pam/) - A Rust interface to the PAM framework
+- [pam-bindings](https://github.com/Nithe14/pam-rs.git) - My own fork of Rust interface to the PAM framework (See [original crate](https://crates.io/crates/pam-bindings) for more details)
 - [oauth2](https://docs.rs/oauth2/latest/oauth2/) - A dedicated, strongly-typed Rust OAuth2 client library
 
-**Tested only with AlmaLinux 9 and Keycloak.**
+**Tested only with AlmaLinux 9.\* and Keycloak.**
 
 ##  Requirements
-- rustc >= 1.67.1
+- rustc >= 1.81.0
 - cargo
 - gcc
-- libpam-dev
+- libpam-devel
+- openssl-devel
 
 ```shell
 #RPMs
-dnf install rustc cargo gcc pam-devel
+dnf install rustc cargo gcc pam-devel openssl-devel
 
 #Debian
-apt install rustc cargo build-essential libpam-dev
+apt install rustc cargo build-essential libpam-dev libssl-dev
 ```
 ## Installation
 You can install it with provided RPM:
@@ -52,11 +53,13 @@ The module requires a configuration file. You can specify the path to this file 
 ```conf
 auth       sufficient   pam_oauth2_device.so config=/etc/pam_oauth2_device/config.json
 ```
-The `config` argument is not required, but it is recommended to set it up. Otherwise, the default configuration path (`/etc/pam_oauth2_device/config.json`) will be used.
+The `config` argument specifies configuration path and is not required, but it is recommended to set up. Otherwise, the default configuration path (`/etc/pam_oauth2_device/config.json`) will be used.
 
 Module also parses two optional arguments:
 - `logs`: Specifies the logging path (default: `/tmp/pam_oauth2_device`),
 - `log_level`: Specifies the logging level filter (default: `info`). Possible options: `info`, `warn`, `error`, `debug`, `trace`, and `none`.
+
+These **cannot** be configured via a configuration file, as logging is initialized beforehand and operates independently of config parsing.
 
 Example: 
 ```conf
@@ -73,6 +76,7 @@ The configuration file (`config.json`) must be a valid JSON file with all requir
 | `oauth_device_url`           | OAuth 2.0 Device Authorization endpoint URL | Yes      | -                    |
 | `oauth_token_url`            | OAuth 2.0 Token endpoint URL                | Yes      | -                    |
 | `oauth_token_introspect_url` | OAuth 2.0 Token Introspection endpoint URL  | Yes      | -                    |
+| `oauth_device_token_polling_timeout` | Time in seconds specifying the polling token timeout  | No      | null                    |
 | `scope`                      | OAuth 2.0 Access Scopes (optional)          | No       | `openid profile`     |
 | `qr_enabled`                 | If set to true, a QR code will be generated from either verification_uri_complete or verification_uri (optional) | No       | `true`               |
 | `messages`                   | An object containing the contents of messages displayed to the user | No       | {...} |
@@ -84,7 +88,7 @@ The configuration file (`config.json`) must be a valid JSON file with all requir
 | `messages.prompt_enter`   | Content of the prompt message encouraging the user to press enter after authentication | No | shown in `example-config.json` |
 
 
-Look at [example-config.json](./config.json).
+Look at [example-config.json](./example-config.json).
 
 ### Redirect URI
 The redirect URI is hardcoded as a `urn:ietf:wg:oauth:2.0:oob` value because the PAM module is Out of Band. You need to configure this redirect URI in your OAuth client settings.
