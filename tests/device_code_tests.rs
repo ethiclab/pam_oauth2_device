@@ -24,7 +24,7 @@ fn device_basic_uri() {
     assert_eq!(resp.interval().as_secs(), 5);
 
     // No QR code generated
-    assert_eq!(prompt.to_string(), "\nOpen provided link in your web browser:\nhttps://mocking.uri/\nAnd enter this unique code:\nmocking_user_code\nPress \"ENTER\" after successful authentication:");
+    assert_eq!(prompt.to_string(), "\nOpen the following link in your web browser:\nhttps://mocking.uri/\nOnce you're in, enter the following code:\nmocking_user_code\nPress \"ENTER\" after successful authentication...");
 
     prompt.generate_qr();
 
@@ -34,7 +34,7 @@ fn device_basic_uri() {
         format!(
             "\n{}\n{}",
             qr_code(&"https://mocking.uri/".to_string()).unwrap(),
-            "Scan QR code above or open provided link in your web browser:\nhttps://mocking.uri/\nAnd enter this unique code:\nmocking_user_code\nPress \"ENTER\" after successful authentication:"
+            "Scan the QR code above or open the following link in your web browser:\nhttps://mocking.uri/\nOnce you're in, enter the following code:\nmocking_user_code\nPress \"ENTER\" after successful authentication..."
         )
     );
 }
@@ -61,7 +61,7 @@ fn device_uri_complete() {
     // No QR code generated
     assert_eq!(
         prompt.to_string(),
-        "\nLogin via provided link in your web browser:\nhttps://mocking.uri/mocking_user_code\nPress \"ENTER\" after successful authentication:"
+        "\nOpen the following link in your web browser:\nhttps://mocking.uri/mocking_user_code\nPress \"ENTER\" after successful authentication..."
     );
 
     prompt.generate_qr();
@@ -69,7 +69,7 @@ fn device_uri_complete() {
     assert_eq!(
         prompt.to_string(),
         format!(
-            "\n{}\nScan QR code above or login via provided link in your web browser:\nhttps://mocking.uri/mocking_user_code\nPress \"ENTER\" after successful authentication:",
+            "\n{}\nScan the QR code above or open the following link in your web browser:\nhttps://mocking.uri/mocking_user_code\nPress \"ENTER\" after successful authentication...",
             qr_code(&"https://mocking.uri/mocking_user_code".to_string()).unwrap()
         )
     );

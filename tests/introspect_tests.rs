@@ -18,7 +18,7 @@ fn common_error() {
     mock.http_introspect_with_status(401);
 
     let device_details = oauth_client.device_code().unwrap();
-    let token = oauth_client.get_token(&device_details).unwrap();
+    let token = oauth_client.get_token(&device_details, None).unwrap();
     let token = oauth_client.introspect(token.access_token());
     assert!(token.is_err());
 
@@ -39,7 +39,7 @@ fn other_error() {
     mock.http_introspect_with_status(101);
 
     let device_details = oauth_client.device_code().unwrap();
-    let token = oauth_client.get_token(&device_details).unwrap();
+    let token = oauth_client.get_token(&device_details, None).unwrap();
     let token = oauth_client.introspect(token.access_token());
     assert!(token.is_err());
 
@@ -47,7 +47,7 @@ fn other_error() {
 
     assert_eq!(
         logger.msg(),
-        "Failed to intropsect user token\n    caused by: Other error: Server returned empty error response"
+        "Failed to intropsect user token\n    caused by: Request failed\n    caused by: curl request failed\n    caused by: [52] Server returned nothing (no headers, no data) (Empty reply from server)"
     );
 }
 #[test]
@@ -63,7 +63,7 @@ fn basic_active() {
     mock.http_introspect_with_status(200);
 
     let device_details = oauth_client.device_code().unwrap();
-    let token = oauth_client.get_token(&device_details).unwrap();
+    let token = oauth_client.get_token(&device_details, None).unwrap();
     let token = oauth_client.introspect(token.access_token()).unwrap();
 
     assert_eq!(token.active(), true);
@@ -84,7 +84,7 @@ fn basic_inactive() {
     mock.http_introspect_with_status(200);
 
     let device_details = oauth_client.device_code().unwrap();
-    let token = oauth_client.get_token(&device_details).unwrap();
+    let token = oauth_client.get_token(&device_details, None).unwrap();
     let token = oauth_client.introspect(token.access_token()).unwrap();
 
     assert_eq!(token.active(), false);
@@ -106,7 +106,7 @@ fn invalid_username() {
     mock.http_introspect_with_status(200);
 
     let device_details = oauth_client.device_code().unwrap();
-    let token = oauth_client.get_token(&device_details).unwrap();
+    let token = oauth_client.get_token(&device_details, None).unwrap();
     let token = oauth_client.introspect(token.access_token()).unwrap();
 
     assert_eq!(oauth_client.validate_token(&token, "non_valid_user"), false);
@@ -130,7 +130,7 @@ fn root_user() {
     mock.http_introspect_with_status(200);
 
     let device_details = oauth_client.device_code().unwrap();
-    let token = oauth_client.get_token(&device_details).unwrap();
+    let token = oauth_client.get_token(&device_details, None).unwrap();
     let token = oauth_client.introspect(token.access_token()).unwrap();
 
     assert_eq!(token.active(), true);
@@ -155,7 +155,7 @@ fn empty_user() {
     mock.http_introspect_with_status(200);
 
     let device_details = oauth_client.device_code().unwrap();
-    let token = oauth_client.get_token(&device_details).unwrap();
+    let token = oauth_client.get_token(&device_details, None).unwrap();
     let token = oauth_client.introspect(token.access_token()).unwrap();
 
     assert_eq!(oauth_client.validate_token(&token, "test"), false);
@@ -175,7 +175,7 @@ fn sufficient_scopes_all() {
     mock.http_introspect_with_status(200);
 
     let device_details = oauth_client.device_code().unwrap();
-    let token = oauth_client.get_token(&device_details).unwrap();
+    let token = oauth_client.get_token(&device_details, None).unwrap();
     let token = oauth_client.introspect(token.access_token()).unwrap();
 
     assert_eq!(token.active(), true);
@@ -196,7 +196,7 @@ fn sufficient_scopes_single() {
     mock.http_introspect_with_status(200);
 
     let device_details = oauth_client.device_code().unwrap();
-    let token = oauth_client.get_token(&device_details).unwrap();
+    let token = oauth_client.get_token(&device_details, None).unwrap();
     let token = oauth_client.introspect(token.access_token()).unwrap();
 
     assert_eq!(token.active(), true);
@@ -216,7 +216,7 @@ fn sufficient_scopes_unordered() {
     mock.http_introspect_with_status(200);
 
     let device_details = oauth_client.device_code().unwrap();
-    let token = oauth_client.get_token(&device_details).unwrap();
+    let token = oauth_client.get_token(&device_details, None).unwrap();
     let token = oauth_client.introspect(token.access_token()).unwrap();
 
     assert_eq!(token.active(), true);
@@ -237,7 +237,7 @@ fn insufficient_scopes_1() {
     mock.http_introspect_with_status(200);
 
     let device_details = oauth_client.device_code().unwrap();
-    let token = oauth_client.get_token(&device_details).unwrap();
+    let token = oauth_client.get_token(&device_details, None).unwrap();
     let token = oauth_client.introspect(token.access_token()).unwrap();
 
     assert_eq!(token.active(), true);
@@ -264,7 +264,7 @@ fn insufficient_scopes_2() {
     mock.http_introspect_with_status(200);
 
     let device_details = oauth_client.device_code().unwrap();
-    let token = oauth_client.get_token(&device_details).unwrap();
+    let token = oauth_client.get_token(&device_details, None).unwrap();
     let token = oauth_client.introspect(token.access_token()).unwrap();
 
     assert_eq!(token.active(), true);
@@ -289,7 +289,7 @@ fn empty_scope() {
     mock.http_introspect_with_status(200);
 
     let device_details = oauth_client.device_code().unwrap();
-    let token = oauth_client.get_token(&device_details).unwrap();
+    let token = oauth_client.get_token(&device_details, None).unwrap();
     let token = oauth_client.introspect(token.access_token()).unwrap();
 
     assert_eq!(oauth_client.validate_token(&token, "test"), false);
@@ -311,7 +311,7 @@ fn empty_exp() {
     mock.http_introspect_with_status(200);
 
     let device_details = oauth_client.device_code().unwrap();
-    let token = oauth_client.get_token(&device_details).unwrap();
+    let token = oauth_client.get_token(&device_details, None).unwrap();
     let token = oauth_client.introspect(token.access_token()).unwrap();
 
     assert_eq!(oauth_client.validate_token(&token, "test"), false);
@@ -333,7 +333,7 @@ fn token_expired() {
     mock.http_introspect_with_status(200);
 
     let device_details = oauth_client.device_code().unwrap();
-    let token = oauth_client.get_token(&device_details).unwrap();
+    let token = oauth_client.get_token(&device_details, None).unwrap();
     let token = oauth_client.introspect(token.access_token()).unwrap();
 
     assert_eq!(oauth_client.validate_token(&token, "test"), false);

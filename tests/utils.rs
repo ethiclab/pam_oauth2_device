@@ -74,6 +74,7 @@ pub(crate) fn mock_config(url: &String, scope: Option<&str>) -> Config {
         oauth_device_url: Url::parse(&format!("{}/{}", url, "device")).unwrap(),
         oauth_token_url: Url::parse(&format!("{}/{}", url, "token")).unwrap(),
         oauth_token_introspect_url: Url::parse(&format!("{}/{}", url, "introspect")).unwrap(),
+        oauth_device_token_polling_timeout: None,
         scopes: scope.unwrap_or_default(),
         qr_enabled: false,
         messages: Messages::default(),
