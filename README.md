@@ -22,15 +22,20 @@ This code relies heavily on two libraries:
 
 ```shell
 #RPMs
-dnf install rustc cargo gcc pam-devel openssl-devel
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+dnf install gcc pam-devel openssl-devel
 
 #Debian
-apt install rustc cargo build-essential libpam-dev libssl-dev
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+apt install build-essential libpam-dev libssl-dev
 ```
 ## Installation
 You can install it with provided RPM:
 ```shell
-rpm -i rpm/pam_oauth2_device.so-0.1.1-1.x86_64.rpm
+wget https://github.com/Nithe14/pam_oauth_device/releases/download/0.3.0/pam_oauth2_device.so-0.3.0-1.x86_64.rpm
+rpm -i pam_oauth2_device.so-0.3.0-1.x86_64.rpm
 ```
 
 You can use the provided Makefile:
