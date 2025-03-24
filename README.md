@@ -34,7 +34,7 @@ apt install build-essential libpam-dev libssl-dev
 ## Installation
 You can install it with provided RPM:
 ```shell
-wget https://github.com/Nithe14/pam_oauth_device/releases/download/0.3.0/pam_oauth2_device.so-0.3.0-1.x86_64.rpm
+wget https://github.com/Nithe14/pam_oauth2_device/releases/download/0.3.0/pam_oauth2_device.so-0.3.0-1.x86_64.rpm
 rpm -i pam_oauth2_device.so-0.3.0-1.x86_64.rpm
 ```
 
