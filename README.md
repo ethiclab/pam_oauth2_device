@@ -128,3 +128,6 @@ auth       include      postlogin
 
 #the rest of the file...
 ```
+
+# Notes
+- This module uses [log](https://docs.rs/log/latest/log/) and [simplelog](https://docs.rs/simplelog/latest/simplelog/) to provide easy logging with a global logger. However, PAM cannot drop this logger properly, which can cause memory leaks. To prevent this, a [shutdown()](https://github.com/Nithe14/pam_oauth2_device/blob/master/src/logger.rs#L64) function is called just before unloading the module. This function flushes the logger buffer and drops the global logger using unsafe code, so please be cautious. It has been tested with Valgrind, and no further memory leaks occur, but remain mindful of this.
