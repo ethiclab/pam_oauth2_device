@@ -27,42 +27,42 @@ fn token_basic() {
 }
 
 //todo
-//#[test]
-//fn token_basic_err() {
-//let (mut mock, oauth_client) = Mock::builder().init(None);
-//let logger = LOGGER.lock().unwrap();
+#[test]
+fn token_basic_err() {
+    let (mut mock, oauth_client) = Mock::builder().init(None);
+    let logger = LOGGER.lock().unwrap();
 
-//mock.http_device_complete();
-//mock.http_token_with_status(403);
+    mock.http_device_complete();
+    mock.http_token_with_status(403);
 
-//let device_details = oauth_client.device_code().unwrap();
-//let token = oauth_client.get_token(&device_details, None);
-//assert!(token.is_err());
+    let device_details = oauth_client.device_code().unwrap();
+    let token = oauth_client.get_token(&device_details, None);
+    assert!(token.is_err());
 
-//let _ = token.map_err(|err| TestLogger::handle_error(err, "Failed to recive user token"));
+    let _ = token.map_err(|err| TestLogger::handle_error(err, "Failed to recive user token"));
 
-//assert_eq!(
-//logger.msg(),
-//"Failed to recive user token\n    caused by: Server returned error response"
-//);
-//}
+    assert_eq!(
+        logger.msg(),
+        "Failed to recive user token\n    caused by: Server returned error response"
+    );
+}
 
-//#[test]
-//fn token_other_err() {
-//let (mut mock, oauth_client) = Mock::builder().init(None);
-//let logger = LOGGER.lock().unwrap();
+#[test]
+fn token_other_err() {
+    let (mut mock, oauth_client) = Mock::builder().init(None);
+    let logger = LOGGER.lock().unwrap();
 
-//mock.http_device_complete();
-//mock.http_token_with_status(101);
+    mock.http_device_complete();
+    mock.http_token_with_status(418);
 
-//let device_details = oauth_client.device_code().unwrap();
-//let token = oauth_client.get_token(&device_details, None);
-//assert!(token.is_err());
+    let device_details = oauth_client.device_code().unwrap();
+    let token = oauth_client.get_token(&device_details, None);
+    assert!(token.is_err());
 
-//let _ = token.map_err(|err| TestLogger::handle_error(err, "Failed to recive user token"));
+    let _ = token.map_err(|err| TestLogger::handle_error(err, "Failed to recive user token"));
 
-//assert_eq!(
-//logger.msg(),
-//"Failed to recive user token\n    caused by: Other error: Server returned empty error response"
-//);
-//}
+    assert_eq!(
+        logger.msg(),
+        "Failed to recive user token\n    caused by: Server returned error response"
+    );
+}
