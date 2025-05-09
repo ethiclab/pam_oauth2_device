@@ -27,6 +27,12 @@ This is useful when Azure does not support the introspection endpoint or returns
 - Validation of claims: `iss`, `aud`, `exp`.
 - Identity extraction from `preferred_username`, `email`, or `sub`.
 
+- Supports **automatic creation of system users** upon successful authentication, if the authenticated user does not already exist on the system
+    - If the user does not exist, the module attempts to create it using useradd.
+    - The home directory is created at: /home/<username>
+    - The default shell is set to: /bin/bash
+    - The username is preserved **as-is** from Azure AD (e.g. john.doe@domain.com)
+
 ### ⚙️ Example Configuration
 
 ```json
