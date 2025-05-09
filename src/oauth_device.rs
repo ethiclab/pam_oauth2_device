@@ -9,8 +9,9 @@ use oauth2::{AccessToken, AuthUrl, ClientId, ClientSecret, DeviceAuthorizationUr
 use serde::Deserialize;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use reqwest::blocking::{get, Client};
-use anyhow::Result;
+use anyhow::{Result, bail};
 use base64;
+use base64::engine::general_purpose::URL_SAFE;
 use base64::Engine;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -18,11 +19,10 @@ use std::collections::HashMap;
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 enum Audience {
-    Single(()),
-    Multiple(()),
+    Single(String),
+    Multiple(Vec<String>),
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct Claims {
     sub: String,
