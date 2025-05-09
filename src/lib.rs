@@ -16,6 +16,9 @@ use std::collections::HashMap;
 use std::ffi::CStr;
 use oauth2::TokenResponse;
 
+mod user;
+use crate::user::create_local_user;
+
 pub struct PamOAuth2Device;
 pam::pam_hooks!(PamOAuth2Device);
 
