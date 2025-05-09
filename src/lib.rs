@@ -14,7 +14,6 @@ use pam::module::{PamHandle, PamHooks};
 use pam::pam_try;
 use std::collections::HashMap;
 use std::ffi::CStr;
-use oauth2::TokenResponse;
 
 pub struct PamOAuth2Device;
 pam::pam_hooks!(PamOAuth2Device);
