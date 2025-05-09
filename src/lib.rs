@@ -5,7 +5,6 @@ pub mod prompt;
 
 use crate::config::read_config;
 use crate::oauth_device::*;
-use oauth2::{TokenIntrospectionResponse, TokenResponse};
 use pam::constants::{PamFlag, PamResultCode, PAM_PROMPT_ECHO_OFF};
 
 use crate::prompt::UserPrompt;
@@ -15,6 +14,7 @@ use pam::module::{PamHandle, PamHooks};
 use pam::pam_try;
 use std::collections::HashMap;
 use std::ffi::CStr;
+use oauth2::TokenResponse;
 
 pub struct PamOAuth2Device;
 pam::pam_hooks!(PamOAuth2Device);
@@ -24,7 +24,7 @@ macro_rules! try_or_handle {
         match $res {
             Ok(o) => o,
             Err(e) => {
-                DefaultLogger::handle_error(e, $error_message);
+                DefaultLogger::handle_error(e.into(), $error_message); // <-- fix qui
                 return $pam_error;
             }
         }
@@ -43,7 +43,7 @@ impl PamHooks for PamOAuth2Device {
         let default_config_path = "/etc/pam_oauth2_device/config.json".to_string();
         let config_path = args.get("config").unwrap_or(&default_config_path);
         let config = try_or_handle!(
-            read_config(&config_path).map_err(|err| err.into()),
+            read_config(&config_path).map_err(|err| Box::new(err) as Box<dyn std::error::Error>),
             "Failed to parse config file",
             PamResultCode::PAM_SYSTEM_ERR
         );
@@ -72,7 +72,7 @@ impl PamHooks for PamOAuth2Device {
 
         let device_code_resp = try_or_handle!(
             oauth_client.device_code(),
-            "Failed to recive device code response",
+            "Failed to receive device code response",
             PamResultCode::PAM_AUTH_ERR
         );
         log::debug!("Device Code response: {:#?}", device_code_resp);
@@ -84,25 +84,23 @@ impl PamHooks for PamOAuth2Device {
         }
         log::debug!("User prompt: {:#?}", user_prompt);
 
-        // Render user prompt
         pam_try!(conv.send(PAM_PROMPT_ECHO_OFF, &user_prompt.to_string()));
 
         let token = try_or_handle!(
             oauth_client.get_token(&device_code_resp, config.oauth_device_token_polling_timeout),
-            "Failed to recive user token",
+            "Failed to receive user token",
             PamResultCode::PAM_AUTH_ERR
         );
         log::debug!("Token response: {:#?}", token);
 
-        let token = try_or_handle!(
-            oauth_client.introspect(&token.access_token()),
+        let remote_username: String = try_or_handle!(
+            oauth_client.introspect_username(&token),
             "Failed to introspect user token",
             PamResultCode::PAM_AUTH_ERR
         );
-        log::debug!("Introspect response: {:#?}", token);
+        log::debug!("Remote username: {}", remote_username);
 
-        if oauth_client.validate_token(&token, &local_username) {
-            let remote_username = token.username().unwrap(); //it is safe cause of token validatiaon
+        if oauth_client.validate_token_claims(&token, &remote_username, &local_username) {
             log::info!(
                 "Authentication successful for remote user: {} -> local user: {}",
                 remote_username,

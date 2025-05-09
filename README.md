@@ -1,4 +1,7 @@
-# PAM module for OAuth 2.0 Device Authorization Grant 
+# PAM module for OAuth 2.0 Device Authorization Grant
+
+![Azure AD Compatible](https://img.shields.io/badge/Azure%20AD-Compatible-blueviolet)
+
 This PAM module authenticates users using [OAuth 2.0 Device Authorization Grant](https://oauth.net/2/device-flow/).  The module communicates with the Authorization Server to obtain user prompt data, attempt to retrieve a user `access_token`, and introspect the obtained token. Since the client module needs to introspect the access token via the Authorization Server introspection endpoint, this endpoint must be implemented on the server side. If the token is valid then the user is authenticated. The module validates the following fields in the Token Information Response:
 - `active`: Must be true.
 - `username`: The username from the `access_token` must match the requested PAM username. The use of "root" as a remote username is prohibited and and will consistently result in failure.
@@ -11,7 +14,54 @@ This code relies heavily on two libraries:
 - [pam-bindings](https://github.com/Nithe14/pam-rs.git) - My own fork of Rust interface to the PAM framework (See [original crate](https://crates.io/crates/pam-bindings) for more details)
 - [oauth2](https://docs.rs/oauth2/latest/oauth2/) - A dedicated, strongly-typed Rust OAuth2 client library
 
-**Tested only with AlmaLinux 9.\* and Keycloak.**
+## 🔐 Azure AD (Microsoft Entra ID) Compatibility
+
+Version **0.3.1-azure** introduces support for **Microsoft Azure AD** (Entra ID) using the **OAuth 2.0 Device Authorization Flow** with direct validation of the `id_token` (JWT).  
+This is useful when Azure does not support the introspection endpoint or returns opaque tokens.
+
+### ✅ New Features
+
+- Support for **`id_token`** as a JWT signed by Azure AD.
+- Signature verification using Microsoft **public JWKs**: https://login.microsoftonline.com/<tenant_id>/discovery/v2.0/keys
+
+- Validation of claims: `iss`, `aud`, `exp`.
+- Identity extraction from `preferred_username`, `email`, or `sub`.
+
+### ⚙️ Example Configuration
+
+```json
+{
+"client_id": "<your-client-id>",
+"client_secret": "<your-client-secret>",
+"oauth_auth_url": "https://login.microsoftonline.com/<tenant_id>/oauth2/v2.0/authorize",
+"oauth_device_url": "https://login.microsoftonline.com/<tenant_id>/oauth2/v2.0/devicecode",
+"oauth_token_url": "https://login.microsoftonline.com/<tenant_id>/oauth2/v2.0/token",
+"scope": "openid profile email offline_access",
+"tenant_id": "<tenant_id>"
+}
+````
+
+ℹ️ The tenant_id field is optional, but recommended. If omitted, "common" will be used as the default.
+
+❌ You **do not need** to specify the oauth_token_introspect_url.
+
+### 🛠️ Validation Logic
+
+- The JWT header kid is matched against the public keys retrieved from Microsoft.
+- The issuer (iss) must match one of the following formats:
+    - https://sts.windows.net/<tenant_id>/
+    - https://login.microsoftonline.com/<tenant_id>/v2.0
+- The audience (aud) must match your client_id.
+- The system username is derived from the following claims, in order:
+    1. preferred_username
+    2. email
+    3. sub (fallback)
+
+
+### 🔒 Security Notes
+
+- Make sure your Azure application is configured to issue id_token also for device flow.
+- Backend token introspection is not required — ideal for federated login via **Office365 / Azure AD**.
 
 ##  Requirements
 - rustc >= 1.81.0

@@ -1,9 +1,9 @@
 [package]
 name = "pam_oauth2_device"
-version = "0.3.1"
+version = "0.3.1-azure"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-description = "PAM module that provides OAuth2.0 Device Authorization Grant"
+description = "PAM module that provides OAuth2.0 Device Authorization Grant with support for Microsoft Azure AD"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
@@ -23,6 +23,9 @@ serde_json = "1.0.140"
 serde_with = "3.12.0"
 simplelog = "0.12.2"
 url = { version = "2.5.4", features = ["serde"] }
+jsonwebtoken = { version = "9", features = ["use_pem"] }
+reqwest = { version = "0.12.15", features = ["blocking", "json", "rustls-tls"] }
+anyhow = "1.0.98"
 
 [dev-dependencies]
 mockito = "1.7.0"

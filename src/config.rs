@@ -5,15 +5,18 @@ use std::result::Result;
 use std::time::Duration;
 use url::Url;
 
+
 #[serde_with::serde_as]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
     pub client_id: String,
     pub client_secret: String,
     pub oauth_auth_url: Url,
     pub oauth_device_url: Url,
     pub oauth_token_url: Url,
-    pub oauth_token_introspect_url: Url,
+    #[serde(default)]
+    pub oauth_token_introspect_url: Option<Url>,
+    pub tenant_id: Option<String>,
     #[serde(default)]
     #[serde_as(as = "Option<serde_with::DurationSeconds<u64>>")]
     pub oauth_device_token_polling_timeout: Option<Duration>,
