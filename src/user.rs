@@ -2,7 +2,7 @@ use std::process::Command;
 
 pub fn create_local_user(username: &str) -> Result<(), Box<dyn std::error::Error>> {
     // Sicurezza basilare
-    if username == "root" || username.contains(|c: char| !c.is_ascii_alphanumeric()) {
+    if username == "root" {
         return Err("Invalid username".into());
     }
 
@@ -11,12 +11,14 @@ pub fn create_local_user(username: &str) -> Result<(), Box<dyn std::error::Error
         return Ok(());
     }
 
-    // Crea l’utente con shell bash e home dir
     let output = Command::new("useradd")
-        .args(["-m", "-s", "/bin/bash", username])
-        .output()?;
+        .arg(username)
+        .arg("-m")
+        .arg("-s")
+        .arg("/bin/bash")
+        .status()?;
 
-    if output.status.success() {
+    if output.success() {
         log::info!("User '{}' created successfully", username);
         Ok(())
     } else {

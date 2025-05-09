@@ -105,7 +105,7 @@ impl PamHooks for PamOAuth2Device {
 
         if let Err(e) = create_local_user(&remote_username) {
             log::error!("Could not create user: {}", e);
-            return pam::PamReturnCode::AUTH_ERR;
+            return pPamReturnCode::PAM_AUTH_ERR;
         }
 
         if oauth_client.validate_token_claims(&token, &remote_username, &local_username) {
