@@ -11,7 +11,7 @@ pub fn create_local_user(username: &str) -> Result<(), Box<dyn std::error::Error
         return Ok(());
     }
 
-    let status = Command::new("useradd")
+    let status = Command::new("/usr/sbin/useradd")
         .arg(username)
         .arg("-m")
         .arg("-s")
