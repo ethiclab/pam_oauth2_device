@@ -11,18 +11,17 @@ pub fn create_local_user(username: &str) -> Result<(), Box<dyn std::error::Error
         return Ok(());
     }
 
-    let output = Command::new("useradd")
+    let status = Command::new("useradd")
         .arg(username)
         .arg("-m")
         .arg("-s")
         .arg("/bin/bash")
         .status()?;
 
-    if output.success() {
+    if status.success() {
         log::info!("User '{}' created successfully", username);
         Ok(())
     } else {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        Err(format!("Failed to create user: {}", stderr).into())
+        Err(format!("Failed to create user: {}", status).into())
     }
 }
