@@ -22,7 +22,7 @@ INSTALL_PATH="/lib/x86_64-linux-gnu/security/pam_oauth2_device.so"
 PAM_CONFIG_PATH="/etc/pam_oauth2_device.json"
 LOG_FILE="/var/log/pam_oauth2_device.log"
 LOGROTATE_CONF="/etc/logrotate.d/pam_oauth2_device"
-PAM_SSH="/etc/pam.d/ssh"
+PAM_SSHD="/etc/pam.d/sshd"
 PAM_COMMON_SESSION="/etc/pam.d/common-session"
 PAM_LINE="auth sufficient pam_oauth2_device.so config=$PAM_CONFIG_PATH logs=$LOG_FILE log_level=debug"
 PAM_MKHOMEDIR_LINE="session required pam_mkhomedir.so skel=/etc/skel umask=0022"
@@ -86,14 +86,14 @@ fi
 echo "Testing logrotate config..."
 sudo logrotate -f "$LOGROTATE_CONF" || echo "logrotate test failed"
 
-echo "Ensuring pam_oauth2_device.so is the first auth line in $PAM_SSH..."
-if ! grep -Fxq "$PAM_LINE" "$PAM_SSH"; then
+echo "Ensuring pam_oauth2_device.so is the first auth line in $PAM_SSHD..."
+if ! grep -Fxq "$PAM_LINE" "$PAM_SSHD"; then
     TMP_FILE=$(sudo mktemp)
-    { echo "$PAM_LINE"; cat "$PAM_SSH"; } | sudo tee "$TMP_FILE" > /dev/null
-    sudo mv "$TMP_FILE" "$PAM_SSH"
-    echo "PAM line inserted as first auth rule in $PAM_SSH."
+    { echo "$PAM_LINE"; cat "$PAM_SSHD"; } | sudo tee "$TMP_FILE" > /dev/null
+    sudo mv "$TMP_FILE" "$PAM_SSHD"
+    echo "PAM line inserted as first auth rule in $PAM_SSHD."
 else
-    echo "PAM line already present in $PAM_SSH. Skipping."
+    echo "PAM line already present in $PAM_SSHD. Skipping."
 fi
 
 # PAM common-session: append if missing, always at end (no duplicates)
