@@ -31,18 +31,28 @@ Version **0.3.1-azure** introduces support for **Microsoft Azure AD** (Entra ID)
   - The home directory is created at: /home/
   - The default shell is set to: /bin/bash
   - The username is preserved **as-is** from Azure AD (e.g. [john.doe@domain.com](mailto\:john.doe@domain.com))
+- The module allows you to restrict login only to users who are members of specific Azure AD groups. This is useful for environments where access must be limited to a security group or role.
+  - The PAM module reads the groups claim from the id_token (JWT).
+  - If the user is not a member of at least one of the groups specified in allowed_groups, access is denied.
+  - If the token does not contain the groups claim and the allowed_groups option is set, access is also denied.
+  - These values must be the Azure AD group Object IDs, not the names.
+  - ⚠️ If the user belongs to a large number of groups, Azure AD may omit the groups claim from the token and instead include a _claim_names reference. This is not supported in the current implementation and will result in authentication failure.
 
 ### ⚙️ Example Configuration
 
 ```json
 {
-"client_id": "<your-client-id>",
-"client_secret": "<your-client-secret>",
-"oauth_auth_url": "https://login.microsoftonline.com/<tenant_id>/oauth2/v2.0/authorize",
-"oauth_device_url": "https://login.microsoftonline.com/<tenant_id>/oauth2/v2.0/devicecode",
-"oauth_token_url": "https://login.microsoftonline.com/<tenant_id>/oauth2/v2.0/token",
-"scope": "openid profile email offline_access",
-"tenant_id": "<tenant_id>"
+  "client_id": "<your-client-id>",
+  "client_secret": "<your-client-secret>",
+  "oauth_auth_url": "https://login.microsoftonline.com/<tenant_id>/oauth2/v2.0/authorize",
+  "oauth_device_url": "https://login.microsoftonline.com/<tenant_id>/oauth2/v2.0/devicecode",
+  "oauth_token_url": "https://login.microsoftonline.com/<tenant_id>/oauth2/v2.0/token",
+  "scope": "openid profile email offline_access",
+  "tenant_id": "<tenant_id>",
+  "allowed_groups": [
+    "xxxx-xxxxx-xxxxx",
+    "yyyy-yyyyy-yyyyy"
+  ]
 }
 ```
 

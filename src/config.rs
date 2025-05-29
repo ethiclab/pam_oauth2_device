@@ -29,6 +29,9 @@ pub struct Config {
 
     #[serde(default)]
     pub messages: Messages,
+
+    #[serde(default)]
+    pub allowed_groups: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

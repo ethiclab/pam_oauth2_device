@@ -29,6 +29,7 @@ struct Claims {
     email: Option<String>,
     preferred_username: Option<String>,
     aud: Option<Audience>,
+    groups: Option<Vec<String>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -215,6 +216,22 @@ impl OAuthClient {
         };
 
         log::info!("Token validated successfully for user: {:?}", token_data.claims.preferred_username);
+        
+        if let Some(allowed_groups) = &self.config.allowed_groups {
+            if let Some(groups) = &token_data.claims.groups {
+                let authorized = groups.iter().any(|g| allowed_groups.contains(g));
+                if !authorized {
+                    log::warn!("User not in any allowed Azure AD group. Access denied.");
+                    return false;
+                } else {
+                    log::info!("User is authorized based on group membership: {:?}", groups);
+                }
+            } else {
+                log::warn!("No 'groups' claim present in token, but 'allowed_groups' is configured. Access denied.");
+                return false;
+            }
+        }
+
         true
     }
 
