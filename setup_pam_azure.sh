@@ -17,15 +17,15 @@ echo
 # GROUP/SUDO PROMPT     #
 #########################
 
-read -rp "Nome del gruppo locale per gli utenti autenticati (lascia vuoto per nessun gruppo): " LOCAL_GROUP
+read -rp "Name of the local group for authenticated users (leave blank for no group): " LOCAL_GROUP
 if [[ -n "$LOCAL_GROUP" ]]; then
     if ! getent group "$LOCAL_GROUP" > /dev/null; then
-        echo "Il gruppo '$LOCAL_GROUP' non esiste. Creo il gruppo..."
+        echo "Group '$LOCAL_GROUP' does not exist. Creating the group..."
         sudo groupadd "$LOCAL_GROUP"
     fi
 
     while true; do
-        read -rp "Vuoi che il gruppo '$LOCAL_GROUP' sia abilitato come sudoers (senza richiesta password)? [y/N]: " SUDOERS
+        read -rp "Do you want group '$LOCAL_GROUP' to have sudo privileges (without password prompt)? [y/N]: " SUDOERS
         case "$SUDOERS" in
             [yY][eE][sS]|[yY])
                 ADD_TO_SUDOERS="yes"
@@ -36,7 +36,7 @@ if [[ -n "$LOCAL_GROUP" ]]; then
                 break
                 ;;
             *)
-                echo "Rispondi y (sì) oppure n (no)."
+                echo "Please answer y (yes) or n (no)."
                 ;;
         esac
     done

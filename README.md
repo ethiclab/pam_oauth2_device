@@ -31,6 +31,19 @@ Version **0.3.1-azure** introduces support for **Microsoft Azure AD** (Entra ID)
   - The home directory is created at: /home/
   - The default shell is set to: /bin/bash
   - The username is preserved **as-is** from Azure AD (e.g. [john.doe@domain.com](mailto\:john.doe@domain.com))
+- Add Users to a Local Group (e.g. sudo, admins, or custom)
+  When the PAM module automatically creates a new user upon successful authentication, you can optionally specify a local group to which these users will be added. This allows for fine-grained privilege management and is particularly useful if you want new users to become part of administrative or application-specific groups (for example, sudo, admin, or a custom group such as oauth2users).
+
+  To enable this, set the "local_group" parameter in your configuration file:
+
+  ```json
+  {
+    ...
+    "local_group": "oauth2users"
+  }
+  ```
+  - If the group specified in "local_group" does not exist on the system, it must be created manually (e.g. sudo groupadd oauth2users) before authentication is attempted.
+  - If omitted, new users are created with default group membership only.
 - The module allows you to restrict login only to users who are members of specific Azure AD groups. This is useful for environments where access must be limited to a security group or role.
   - The PAM module reads the groups claim from the id_token (JWT).
   - If the user is not a member of at least one of the groups specified in allowed_groups, access is denied.
