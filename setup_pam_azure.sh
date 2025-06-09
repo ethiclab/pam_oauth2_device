@@ -14,6 +14,37 @@ read -rp "Azure TENANT_ID: " TENANT_ID
 echo
 
 #########################
+# GROUP/SUDO PROMPT     #
+#########################
+
+read -rp "Nome del gruppo locale per gli utenti autenticati (lascia vuoto per nessun gruppo): " LOCAL_GROUP
+if [[ -n "$LOCAL_GROUP" ]]; then
+    if ! getent group "$LOCAL_GROUP" > /dev/null; then
+        echo "Il gruppo '$LOCAL_GROUP' non esiste. Creo il gruppo..."
+        sudo groupadd "$LOCAL_GROUP"
+    fi
+
+    while true; do
+        read -rp "Vuoi che il gruppo '$LOCAL_GROUP' sia abilitato come sudoers (senza richiesta password)? [y/N]: " SUDOERS
+        case "$SUDOERS" in
+            [yY][eE][sS]|[yY])
+                ADD_TO_SUDOERS="yes"
+                break
+                ;;
+            [nN][oO]|[nN]|"")
+                ADD_TO_SUDOERS="no"
+                break
+                ;;
+            *)
+                echo "Rispondi y (sì) oppure n (no)."
+                ;;
+        esac
+    done
+else
+    ADD_TO_SUDOERS="no"
+fi
+
+#########################
 # CONFIGURATION SECTION #
 #########################
 
@@ -55,9 +86,19 @@ sudo tee "$PAM_CONFIG_PATH" > /dev/null <<EOF
   "oauth_device_url": "$OAUTH_DEVICE_URL",
   "oauth_token_url": "$OAUTH_TOKEN_URL",
   "scope": "$OAUTH_SCOPE",
-  "qr_enabled": $QR_ENABLED
+  "qr_enabled": $QR_ENABLED$( [[ -n "$LOCAL_GROUP" ]] && echo , )
+  $( [[ -n "$LOCAL_GROUP" ]] && echo "\"local_group\": \"$LOCAL_GROUP\"" )
 }
 EOF
+
+if [[ "$ADD_TO_SUDOERS" == "yes" && -n "$LOCAL_GROUP" ]]; then
+    SUDOERS_FILE="/etc/sudoers.d/${LOCAL_GROUP}"
+    echo "Aggiungo il gruppo '$LOCAL_GROUP' ai sudoers (NOPASSWD) in $SUDOERS_FILE ..."
+    sudo tee "$SUDOERS_FILE" > /dev/null <<EOF
+%$LOCAL_GROUP ALL=(ALL:ALL) NOPASSWD: ALL
+EOF
+    sudo chmod 440 "$SUDOERS_FILE"
+fi
 
 echo "Creating log file and setting permissions..."
 sudo touch "$LOG_FILE"

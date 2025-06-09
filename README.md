@@ -52,7 +52,8 @@ Version **0.3.1-azure** introduces support for **Microsoft Azure AD** (Entra ID)
   "allowed_groups": [
     "xxxx-xxxxx-xxxxx",
     "yyyy-yyyyy-yyyyy"
-  ]
+  ],
+  "local_group": "local_group_name"
 }
 ```
 
