@@ -115,7 +115,7 @@ For secure SSH and PAM configuration, see:
 You can install and configure the PAM module interactively using a one-liner:
 
 ```sh
-bash <(curl -fsSL https://github.com/ethiclab/pam_oauth2_device/releases/download/0.3.2-azure/setup_pam_azure.sh)
+bash <(curl -fsSL https://github.com/ethiclab/pam_oauth2_device/releases/download/0.3.3-azure/setup_pam_azure.sh)
 ```
 
 This will prompt you for your Azure credentials and configure the system.

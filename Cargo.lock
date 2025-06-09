@@ -1246,7 +1246,7 @@ dependencies = [
 
 [[package]]
 name = "pam_oauth2_device"
-version = "0.3.1-azure"
+version = "0.3.3-azure"
 dependencies = [
  "anyhow",
  "base64 0.22.1",

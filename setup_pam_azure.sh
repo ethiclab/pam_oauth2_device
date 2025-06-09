@@ -48,7 +48,7 @@ fi
 # CONFIGURATION SECTION #
 #########################
 
-SO_URL="https://github.com/ethiclab/pam_oauth2_device/releases/download/0.3.2-azure/libpam_oauth2_device.so"
+SO_URL="https://github.com/ethiclab/pam_oauth2_device/releases/download/0.3.3-azure/libpam_oauth2_device.so"
 INSTALL_PATH="/lib/x86_64-linux-gnu/security/pam_oauth2_device.so"
 PAM_CONFIG_PATH="/etc/pam_oauth2_device.json"
 LOG_FILE="/var/log/pam_oauth2_device.log"
