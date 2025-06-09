@@ -101,9 +101,11 @@ impl PamHooks for PamOAuth2Device {
             "Failed to introspect user token",
             PamResultCode::PAM_AUTH_ERR
         );
-        log::debug!("Remote username: {}", remote_username);
 
-        if let Err(e) = create_local_user(&remote_username) {
+        log::debug!("Remote username: {}", remote_username);
+        log::debug!("Local username: {}", local_username);
+
+        if let Err(e) = create_local_user(&remote_username, config.local_group.as_deref()) {
             log::error!("Could not create user: {}", e);
             return PamResultCode::PAM_AUTH_ERR;
         }

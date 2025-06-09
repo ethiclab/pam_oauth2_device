@@ -32,6 +32,9 @@ pub struct Config {
 
     #[serde(default)]
     pub allowed_groups: Option<Vec<String>>,
+
+    #[serde(default)]
+    pub local_group: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
