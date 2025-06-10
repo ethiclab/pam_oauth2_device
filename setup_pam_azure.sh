@@ -153,6 +153,11 @@ backup_sshd_config() {
 patch_sshd_config() {
     backup_sshd_config
 
+    if grep -qE "^\s*ChallengeResponseAuthentication" "$SSHD_CONFIG"; then
+        echo "Commenting out 'ChallengeResponseAuthentication' in $SSHD_CONFIG..."
+        sudo sed -i -E 's/^\s*(ChallengeResponseAuthentication)/# \1/' "$SSHD_CONFIG"
+    fi
+
     # Utility to replace or add a config line (idempotent)
     replace_or_add() {
         local key="$1"
