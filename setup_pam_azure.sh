@@ -72,8 +72,37 @@ echo "Installing dependencies..."
 sudo apt update
 sudo apt install -y curl
 
-echo "Downloading prebuilt pam_oauth2_device.so..."
-sudo curl -L --output "$INSTALL_PATH" "$SO_URL"
+detect_os_variant_and_install_path() {
+    if [[ -f /etc/os-release ]]; then
+        . /etc/os-release
+        case "$ID" in
+            debian)
+                if [[ "$VERSION_ID" == 12* ]]; then
+                    echo "debian12;/lib/x86_64-linux-gnu/security/pam_oauth2_device.so"
+                elif [[ "$VERSION_ID" == 11* ]]; then
+                    echo "debian11;/lib/security/pam_oauth2_device.so"
+                else
+                    echo "debian-unknown;/lib/security/pam_oauth2_device.so"
+                fi
+                ;;
+            *)
+                echo "${ID}-${VERSION_ID};/lib/security/pam_oauth2_device.so"
+                ;;
+        esac
+    else
+        echo "unknown;/lib/security/pam_oauth2_device.so"
+    fi
+}
+
+IFS=';' read -r OS_VARIANT INSTALL_PATH <<< "$(detect_os_variant_and_install_path)"
+SO_URL="https://github.com/ethiclab/pam_oauth2_device/releases/download/0.3.3-azure/libpam_oauth2_device-${OS_VARIANT}-x86_64.so"
+echo "Installing pam_oauth2_device.so for $OS_VARIANT at $INSTALL_PATH ..."
+sudo mkdir -p "$(dirname "$INSTALL_PATH")"
+
+if ! sudo curl -fL --output "$INSTALL_PATH" "$SO_URL"; then
+    echo "ERROR: Could not download the correct library for this system ($OS_VARIANT)." >&2
+    exit 1
+fi
 sudo chmod 0755 "$INSTALL_PATH"
 
 echo "Creating PAM config file $PAM_CONFIG_PATH..."
